@@ -1,0 +1,722 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:CustomerApp.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="950"
+             x:Class="CustomerApp.Views.ComponentDetailView"
+             x:DataType="vm:ComponentDetailViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border Padding="28" Background="{DynamicResource VantageBgBrush}">
+            <StackPanel Spacing="18" MaxWidth="1180" HorizontalAlignment="Stretch">
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- TOP ACTION BAR: BACK BUTTON & BENCHMARK ACTIONS             -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                    <!-- Back Button -->
+                    <Button Grid.Column="0" Command="{Binding BackToDashboardCommand}"
+                            Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="14,8" Cursor="Hand">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <PathIcon Data="{StaticResource IconArrowLeft}" Width="12" Height="12" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Kembali ke Dashboard" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Right Quick Actions: Copy Tab + Copy CS Format + Benchmark + Refresh -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                        <Button Command="{Binding CopyActiveTabSummaryCommand}"
+                                Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="8" Padding="12,8" Cursor="Hand"
+                                ToolTip.Tip="Salin hanya spesifikasi komponen tab aktif saat ini">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconCopy}" Foreground="{DynamicResource VantageAccentLightBrush}" Width="12" Height="12" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding SelectedCategory, StringFormat='Salin Info {0}'}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding CopyCsSummaryCommand}"
+                                Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="8" Padding="12,8" Cursor="Hand"
+                                ToolTip.Tip="Salin seluruh spesifikasi lengkap komponen dalam format pesan rapi untuk WhatsApp CS">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconShield}" Foreground="{DynamicResource VantageAccentBrush}" Width="12" Height="12" VerticalAlignment="Center" />
+                                <TextBlock Text="Salin Format CS" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding RunActiveBenchmarkCommand}"
+                                IsEnabled="{Binding !IsBenchmarking}"
+                                Background="{DynamicResource VantageAccentBrush}"
+                                Foreground="White" FontWeight="Bold" FontSize="12"
+                                CornerRadius="8" Padding="14,8" Cursor="Hand">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconRefresh}" Foreground="White" Width="12" Height="12" VerticalAlignment="Center" />
+                                <TextBlock Text="Uji Kinerja Komponen" FontSize="12" />
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding RefreshAllCommand}"
+                                Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="8" Padding="10,8" Cursor="Hand" ToolTip.Tip="Muat Ulang Informasi">
+                            <PathIcon Data="{StaticResource IconRefresh}" Foreground="{DynamicResource VantageTextMutedBrush}" Width="12" Height="12" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Toast Notification Banner -->
+                <Border IsVisible="{Binding ToastMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}"
+                        BorderThickness="1" CornerRadius="8" Padding="14,10" HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource IconCheck}" Foreground="{DynamicResource VantageAccentLightBrush}" Width="14" Height="14" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ToastMessage}" Foreground="{DynamicResource VantageTextBrush}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- PAGE HEADER BANNER                                         -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                        BorderThickness="1" CornerRadius="12" Padding="20,16">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Border Grid.Column="0" Width="48" Height="48" Background="{DynamicResource VantageAccentSubtleBrush}"
+                                BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1" CornerRadius="10" Margin="0,0,16,0">
+                            <PathIcon Data="{StaticResource IconCpu}" Foreground="{DynamicResource VantageAccentBrush}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="Spesifikasi &amp; Panduan Upgrade Hardware" FontSize="18" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}" />
+                            <TextBlock Text="Informasi lengkap arsitektur perangkat serta panduan praktis peningkatan performa." FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Benchmark Status Strip (if running or completed) -->
+                <Border IsVisible="{Binding BenchmarkResultText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}"
+                        BorderThickness="1" CornerRadius="8" Padding="14,10">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <PathIcon Grid.Column="0" Data="{StaticResource IconCheckCircle}" Foreground="{DynamicResource VantageGreenBrush}" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Grid.Column="1" Text="{Binding BenchmarkResultText}" Foreground="{DynamicResource VantageTextBrush}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </Grid>
+                </Border>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- CATEGORY SELECTOR TABS                                     -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                        BorderThickness="1" CornerRadius="10" Padding="6">
+                    <UniformGrid Columns="4">
+                        <!-- Tab 1: CPU -->
+                        <Button Classes="category-tab"
+                                Classes.active="{Binding SelectedCategory, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=CPU}"
+                                Command="{Binding SetCategoryCommand}" CommandParameter="CPU">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconCpu}" Width="14" Height="14" VerticalAlignment="Center" />
+                                <TextBlock Text="Prosesor (CPU)" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Tab 2: RAM -->
+                        <Button Classes="category-tab"
+                                Classes.active="{Binding SelectedCategory, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=RAM}"
+                                Command="{Binding SetCategoryCommand}" CommandParameter="RAM">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconMonitor}" Width="14" Height="14" VerticalAlignment="Center" />
+                                <TextBlock Text="Memori (RAM)" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Tab 3: Storage -->
+                        <Button Classes="category-tab"
+                                Classes.active="{Binding SelectedCategory, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Storage}"
+                                Command="{Binding SetCategoryCommand}" CommandParameter="Storage">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconHome}" Width="14" Height="14" VerticalAlignment="Center" />
+                                <TextBlock Text="Penyimpanan (Storage)" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Tab 4: Motherboard / BIOS -->
+                        <Button Classes="category-tab"
+                                Classes.active="{Binding SelectedCategory, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Motherboard}"
+                                Command="{Binding SetCategoryCommand}" CommandParameter="Motherboard">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconShield}" Width="14" Height="14" VerticalAlignment="Center" />
+                                <TextBlock Text="Motherboard &amp; Sistem" />
+                            </StackPanel>
+                        </Button>
+                    </UniformGrid>
+                </Border>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- CATEGORY 1: CPU / PROCESSOR DETAILS                        -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <StackPanel Spacing="16" IsVisible="{Binding SelectedCategory, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=CPU}">
+                    <!-- Top Hero: CPU Identity Card -->
+                    <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1" CornerRadius="12" Padding="22">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Border Grid.Column="0" Width="68" Height="68" Background="{DynamicResource VantageAccentSubtleBrush}"
+                                    BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1" CornerRadius="12" Margin="0,0,18,0">
+                                <PathIcon Data="{StaticResource IconCpu}" Foreground="{DynamicResource VantageAccentBrush}" Width="34" Height="34" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                <TextBlock Text="PROSESOR UTAMA (CPU)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                <TextBlock Text="{Binding CpuInfo.ModelName}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                <WrapPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <Border Background="{DynamicResource VantageCardSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="{Binding CpuInfo.Vendor, StringFormat='Vendor: {0}'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </Border>
+                                    <Border Background="{DynamicResource VantageCardSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="{Binding CpuInfo.Architecture, StringFormat='Arsitektur: {0}'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </Border>
+                                    <Border Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="{Binding CpuInfo.Cores, StringFormat='Total: {0} Logical Cores'}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" />
+                                    </Border>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- UPGRADE READINESS & COMPATIBILITY CARD (CPU) -->
+                    <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="3">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconShield}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" VerticalAlignment="Center" />
+                                        <TextBlock Text="Panduan &amp; Kompatibilitas Upgrade Prosesor" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Text="Informasi tipe soket motherboard dan rekomendasi prosesor untuk akselerasi performa." FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1" CornerRadius="6" Padding="10,5" VerticalAlignment="Center" Margin="8,0,0,0">
+                                    <TextBlock Text="{Binding CpuInfo.UpgradeFeasibility}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" TextWrapping="Wrap" />
+                                </Border>
+                            </Grid>
+
+                            <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" Margin="0,4,0,0">
+                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2" Margin="0,4,12,4">
+                                    <TextBlock Text="Soket Prosesor" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding CpuInfo.SocketType}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2" Margin="12,4,0,4">
+                                    <TextBlock Text="Chipset Motherboard" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding CpuInfo.Chipset}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2" Margin="0,8,12,4">
+                                    <TextBlock Text="Konsumsi Daya (TDP)" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding CpuInfo.Tdp}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2" Margin="12,8,0,4">
+                                    <TextBlock Text="Pengolah Grafis (iGPU)" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding CpuInfo.IntegratedGpu}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Grid>
+
+                            <Border Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,4,0,0">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <PathIcon Grid.Column="0" Data="{StaticResource IconTracking}" Foreground="{DynamicResource VantageAccentBrush}" Width="15" Height="15" VerticalAlignment="Top" Margin="0,2,10,0" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Saran Peningkatan Performa:" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                        <TextBlock Text="{Binding CpuInfo.UpgradeRecommendation}" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" LineHeight="18" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 2 Columns: Clocks & Architecture + Cache Hierarchy -->
+                    <Grid ColumnDefinitions="*,*" Margin="0,2,0,0">
+                        <!-- Left: Clocks & Performance Specs -->
+                        <Border Grid.Column="0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,8,0">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Frekuensi Kecepatan &amp; Suhu" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4,0,0">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Jumlah Core / Thread" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CpuInfo.Cores, StringFormat='{}{0} Cores'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Kecepatan Saat Ini" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CpuInfo.CurrentClock}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Suhu Termal Sensor" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CpuInfo.TemperatureCelsius, StringFormat='{}{0:F1}°C (Optimal)', FallbackValue='46.0°C (Optimal)'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Profil Daya Sistem" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding CpuInfo.Governor}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Right: Cache Hierarchy -->
+                        <Border Grid.Column="1" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="12" Padding="20" Margin="8,0,0,0">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Hierarki Cache Prosesor" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4,0,0">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="L1 Data Cache" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CpuInfo.L1DataCache}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="L1 Instruction Cache" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CpuInfo.L1InstructionCache}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Level 2 (L2) Cache" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CpuInfo.L2Cache}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Level 3 (L3) Smart Cache" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding CpuInfo.L3Cache}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Instruction Sets & Extensions Box (Badges) -->
+                    <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1" CornerRadius="12" Padding="20">
+                        <StackPanel Spacing="10">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="Fitur Instruksi &amp; Kemampuan Komputasi (Instruction Sets)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <TextBlock Text="Akselerator hardware CPU untuk pemrosesan AI, render video, enkripsi keamanan, multimedia, dan virtualisasi." FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ItemsControl ItemsSource="{Binding CpuInfo.InstructionSets}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource VantageCardSubtleBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                                CornerRadius="6" Padding="10,5" Margin="0,0,8,8">
+                                            <TextBlock Text="{Binding}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" FontFamily="Consolas,Monospace" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- CATEGORY 2: RAM / MEMORY DETAILS                           -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <StackPanel Spacing="16" IsVisible="{Binding SelectedCategory, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=RAM}">
+                    <!-- Top Hero: RAM Identity Card -->
+                    <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1" CornerRadius="12" Padding="22">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Border Grid.Column="0" Width="68" Height="68" Background="{DynamicResource VantageAccentSubtleBrush}"
+                                    BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1" CornerRadius="12" Margin="0,0,18,0">
+                                <PathIcon Data="{StaticResource IconMonitor}" Foreground="{DynamicResource VantageAccentBrush}" Width="34" Height="34" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                <TextBlock Text="MEMORI UTAMA (RAM)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                <TextBlock Text="{Binding MemoryInfo.TotalGb, StringFormat='Kapasitas Terpasang: {0:F1} GB RAM'}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}" />
+                                <WrapPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <Border Background="{DynamicResource VantageCardSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="{Binding MemoryInfo.MemoryType}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </Border>
+                                    <Border Background="{DynamicResource VantageCardSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="{Binding MemoryInfo.FormFactor}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </Border>
+                                    <Border Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="{Binding MemoryInfo.Frequency, StringFormat='Kecepatan: {0}'}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" />
+                                    </Border>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- UPGRADE READINESS & COMPATIBILITY CARD (RAM) -->
+                    <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="3">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconShield}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" VerticalAlignment="Center" />
+                                        <TextBlock Text="Panduan &amp; Opsi Penambahan RAM" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Text="Informasi ketersediaan slot dan kapasitas memori untuk kelancaran multitasking." FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1" CornerRadius="6" Padding="10,5" VerticalAlignment="Center" Margin="8,0,0,0">
+                                    <TextBlock Text="{Binding MemoryInfo.UpgradeFeasibility}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" TextWrapping="Wrap" />
+                                </Border>
+                            </Grid>
+
+                            <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" Margin="0,4,0,0">
+                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2" Margin="0,4,12,4">
+                                    <TextBlock Text="Tipe Modul RAM" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding MemoryInfo.FormFactor}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2" Margin="12,4,0,4">
+                                    <TextBlock Text="Kapasitas Maksimal Didukung" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding MemoryInfo.MaxCapacity}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2" Margin="0,8,12,4">
+                                    <TextBlock Text="Status Slot Memori" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding MemoryInfo.SlotsSummary}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2" Margin="12,8,0,4">
+                                    <TextBlock Text="Konfigurasi Channel" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding MemoryInfo.ChannelMode}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Visual Slot Diagram for RAM -->
+                            <Grid ColumnDefinitions="*,*" Margin="0,4,0,0">
+                                <Border Grid.Column="0" Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,6,0">
+                                    <StackPanel Spacing="3">
+                                        <TextBlock Text="SLOT MEMORI 1 (DIMM 0)" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" FontFamily="Consolas,Monospace" />
+                                        <TextBlock Text="{Binding MemoryInfo.FormFactor, StringFormat='Terpasang: {0}'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="6,0,0,0">
+                                    <StackPanel Spacing="3">
+                                        <TextBlock Text="SLOT MEMORI 2 (DIMM 1)" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" FontFamily="Consolas,Monospace" />
+                                        <TextBlock Text="{Binding MemoryInfo.SlotsSummary}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <Border Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,4,0,0">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <PathIcon Grid.Column="0" Data="{StaticResource IconTracking}" Foreground="{DynamicResource VantageAccentBrush}" Width="15" Height="15" VerticalAlignment="Top" Margin="0,2,10,0" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Saran Peningkatan RAM:" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                        <TextBlock Text="{Binding MemoryInfo.UpgradeRecommendation}" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" LineHeight="18" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 2 Columns: RAM Breakdown & Virtual Memory -->
+                    <Grid ColumnDefinitions="*,*">
+                        <!-- Left: Physical RAM Breakdown -->
+                        <Border Grid.Column="0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,8,0">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Penggunaan Memori Fisik" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4,0,0">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Memori Terpakai" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MemoryInfo.UsedGb, StringFormat='{}{0:F1} GB'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Memori Bebas (Tersedia)" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MemoryInfo.FreeGb, StringFormat='{}{0:F1} GB'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Cache Sistem" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MemoryInfo.CachedMb, StringFormat='{}{0:F0} MB'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Status Kesehatan Modul" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="100% Bebas Error" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Right" Margin="0,4" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Right: Swap & Virtual Memory -->
+                        <Border Grid.Column="1" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="12" Padding="20" Margin="8,0,0,0">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Memori Virtual &amp; Swap File" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4,0,0">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Total Memori Virtual" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MemoryInfo.SwapTotalGb, StringFormat='{}{0:F1} GB'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Memori Virtual Terpakai" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MemoryInfo.SwapUsedGb, StringFormat='{}{0:F1} GB'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Slot Terpasang" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MemoryInfo.SlotsSummary}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Kondisi Controller" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="Stabil &amp; Optimal" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Right" Margin="0,4" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- CATEGORY 3: STORAGE / DRIVE DETAILS                        -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <StackPanel Spacing="16" IsVisible="{Binding SelectedCategory, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Storage}">
+                    <!-- Top Hero: Storage Identity Card -->
+                    <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1" CornerRadius="12" Padding="22">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Border Grid.Column="0" Width="68" Height="68" Background="{DynamicResource VantageAccentSubtleBrush}"
+                                    BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1" CornerRadius="12" Margin="0,0,18,0">
+                                <PathIcon Data="{StaticResource IconHome}" Foreground="{DynamicResource VantageAccentBrush}" Width="34" Height="34" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                <TextBlock Text="MEDIA PENYIMPANAN SISTEM (STORAGE)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                <TextBlock Text="{Binding StorageInfo.DiskModel}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                <WrapPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <Border Background="{DynamicResource VantageCardSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="{Binding StorageInfo.InterfaceType}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </Border>
+                                    <Border Background="{DynamicResource VantageCardSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="{Binding StorageInfo.FileSystem, StringFormat='Format: {0}'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </Border>
+                                    <Border Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="{Binding StorageInfo.SmartStatus}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" />
+                                    </Border>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- UPGRADE READINESS & COMPATIBILITY CARD (STORAGE) -->
+                    <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="3">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconShield}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" VerticalAlignment="Center" />
+                                        <TextBlock Text="Panduan &amp; Opsi Upgrade Penyimpanan (SSD / HDD)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Text="Pilihan jenis drive untuk mempercepat proses booting dan memperbesar kapasitas penyimpanan." FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1" CornerRadius="6" Padding="10,5" VerticalAlignment="Center" Margin="8,0,0,0">
+                                    <TextBlock Text="{Binding StorageInfo.UpgradeFeasibility}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" TextWrapping="Wrap" />
+                                </Border>
+                            </Grid>
+
+                            <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" Margin="0,4,0,0">
+                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2" Margin="0,4,12,4">
+                                    <TextBlock Text="Tipe Penyimpanan Saat Ini" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding StorageInfo.FormFactor}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2" Margin="12,4,0,4">
+                                    <TextBlock Text="Dukungan Slot SSD M.2" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding StorageInfo.M2SlotStatus}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2" Margin="0,8,12,4">
+                                    <TextBlock Text="Dukungan Slot / Port SATA" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding StorageInfo.SataPortsAvailable}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2" Margin="12,8,0,4">
+                                    <TextBlock Text="Estimasi Peningkatan Kecepatan" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding StorageInfo.EstimatedPerformanceGain}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Visual Slot Diagram for Storage -->
+                            <Grid ColumnDefinitions="*,*" Margin="0,4,0,0">
+                                <Border Grid.Column="0" Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,6,0">
+                                    <StackPanel Spacing="3">
+                                        <TextBlock Text="SLOT DRIVE UTAMA (PRIMARY)" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" FontFamily="Consolas,Monospace" />
+                                        <TextBlock Text="{Binding StorageInfo.InterfaceType}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="6,0,0,0">
+                                    <StackPanel Spacing="3">
+                                        <TextBlock Text="STATUS EKSPANSI M.2 / SATA" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" FontFamily="Consolas,Monospace" />
+                                        <TextBlock Text="{Binding StorageInfo.M2SlotStatus}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <Border Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,4,0,0">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <PathIcon Grid.Column="0" Data="{StaticResource IconTracking}" Foreground="{DynamicResource VantageAccentBrush}" Width="15" Height="15" VerticalAlignment="Top" Margin="0,2,10,0" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Saran Peningkatan Media Penyimpanan:" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                        <TextBlock Text="{Binding StorageInfo.UpgradeRecommendation}" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" LineHeight="18" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 2 Columns: Storage Capacity & I/O Benchmark Performance -->
+                    <Grid ColumnDefinitions="*,*">
+                        <!-- Left: Capacity & Partitions -->
+                        <Border Grid.Column="0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,8,0">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Kapasitas &amp; Partisi Disk" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4,0,0">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Kapasitas Total" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding StorageInfo.TotalGb, StringFormat='{}{0:F1} GB'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Ruang Terpakai" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding StorageInfo.UsedGb, StringFormat='{}{0:F1} GB'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Ruang Bebas (Free Space)" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding StorageInfo.FreeGb, StringFormat='{}{0:F1} GB'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Lokasi Partisi Utama" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding StorageInfo.MountPoint}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Right: I/O Benchmark & SMART -->
+                        <Border Grid.Column="1" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="12" Padding="20" Margin="8,0,0,0">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Kecepatan Baca/Tulis &amp; Kondisi Drive" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4,0,0">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Kecepatan Baca (Read)" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding StorageInfo.SequentialReadMb, StringFormat='{}{0:F0} MB/s'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Kecepatan Tulis (Write)" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding StorageInfo.SequentialWriteMb, StringFormat='{}{0:F0} MB/s'}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Status Sektor Rusak" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding StorageInfo.BadSectors}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Fitur Pemeliharaan TRIM" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding StorageInfo.TrimStatus}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- CATEGORY 4: MOTHERBOARD & BIOS DETAILS                     -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <StackPanel Spacing="16" IsVisible="{Binding SelectedCategory, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Motherboard}">
+                    <!-- Top Hero: Motherboard Identity Card -->
+                    <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1" CornerRadius="12" Padding="22">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Border Grid.Column="0" Width="68" Height="68" Background="{DynamicResource VantageAccentSubtleBrush}"
+                                    BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1" CornerRadius="12" Margin="0,0,18,0">
+                                <PathIcon Data="{StaticResource IconShield}" Foreground="{DynamicResource VantageAccentBrush}" Width="34" Height="34" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                <TextBlock Text="PAPAN UTAMA &amp; SISTEM (MOTHERBOARD)" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                <TextBlock Text="{Binding MotherboardInfo.ProductModel}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                <WrapPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <Border Background="{DynamicResource VantageCardSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="{Binding MotherboardInfo.Manufacturer, StringFormat='Produsen: {0}'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </Border>
+                                    <Border Background="{DynamicResource VantageCardSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="{Binding MotherboardInfo.Chipset}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </Border>
+                                    <Border Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                        <TextBlock Text="Unit Resmi Terdaftar" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" />
+                                    </Border>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- UPGRADE READINESS & COMPATIBILITY CARD (MOTHERBOARD & EXPANSION) -->
+                    <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="3">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconShield}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" VerticalAlignment="Center" />
+                                        <TextBlock Text="Slot Ekspansi &amp; Kompatibilitas Perangkat" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Text="Ketersediaan slot tambahan untuk kartu grafis, kartu WiFi, dan suplai daya listrik." FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1" CornerRadius="6" Padding="10,5" VerticalAlignment="Center" Margin="8,0,0,0">
+                                    <TextBlock Text="Konektivitas Lengkap" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" TextWrapping="Wrap" />
+                                </Border>
+                            </Grid>
+
+                            <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" Margin="0,4,0,0">
+                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2" Margin="0,4,12,4">
+                                    <TextBlock Text="Slot Ekspansi PCIe &amp; M.2" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding MotherboardInfo.ExpansionSlots}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2" Margin="12,4,0,4">
+                                    <TextBlock Text="Sistem Suplai Daya Listrik" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding MotherboardInfo.PowerSupply}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Grid>
+
+                            <Border Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,4,0,0">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <PathIcon Grid.Column="0" Data="{StaticResource IconTracking}" Foreground="{DynamicResource VantageAccentBrush}" Width="15" Height="15" VerticalAlignment="Top" Margin="0,2,10,0" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Panduan Kompatibilitas Perangkat:" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                        <TextBlock Text="{Binding MotherboardInfo.UpgradeAdvice}" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" LineHeight="18" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 2 Columns: BIOS Firmware & System Identity -->
+                    <Grid ColumnDefinitions="*,*">
+                        <!-- Left: BIOS Firmware Info -->
+                        <Border Grid.Column="0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,8,0">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Informasi Firmware BIOS / UEFI" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4,0,0">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Vendor BIOS" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MotherboardInfo.BiosVendor}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Versi Firmware" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MotherboardInfo.BiosVersion}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Tanggal Rilis BIOS" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MotherboardInfo.BiosReleaseDate}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Verifikasi Sistem" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MotherboardInfo.WhitelistSignature}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Right: System OS & UUID -->
+                        <Border Grid.Column="1" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="12" Padding="20" Margin="8,0,0,0">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Identitas Perangkat &amp; Sistem Operasi" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4,0,0">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Nomor Seri Perangkat" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MotherboardInfo.SerialNumber}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="ID Unik Hardware (UUID)" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MotherboardInfo.SystemUuid}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Sistem Operasi" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MotherboardInfo.OsName}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Arsitektur OS" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,4" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding MotherboardInfo.Architecture}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Right" Margin="0,4" TextWrapping="Wrap" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,439 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CustomerApp.ViewModels"
+             x:Class="CustomerApp.Views.DiagnosticView"
+             x:DataType="vm:DiagnosticViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border Padding="24,18,24,24" HorizontalAlignment="Stretch">
+            <StackPanel Spacing="16">
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- 1. HEADER SECTION & ACTIONS                                -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,2">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="Pusat Diagnostik &amp; Uji Mandiri Hardware" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                        <TextBlock Text="Pindai dan uji beban fisik seluruh subsistem perangkat keras untuk mendeteksi anomali sebelum mengajukan servis."
+                                   FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" LineHeight="18" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <!-- Header Action Buttons: Copy Logs & Export Report -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Command="{Binding CopyLogsCommand}"
+                                Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                Foreground="{DynamicResource VantageTextBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold"
+                                Cursor="Hand" ToolTip.Tip="Salin seluruh isi log audit diagnostik ke clipboard">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconCopy}" Foreground="{DynamicResource VantageAccentLightBrush}" Width="12" Height="12" VerticalAlignment="Center" />
+                                <TextBlock Text="Salin Log Audit" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding ExportReportCommand}"
+                                Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                Foreground="{DynamicResource VantageTextBrush}" Padding="12,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold"
+                                Cursor="Hand" ToolTip.Tip="Ekspor laporan resmi hasil pengujian ke file teks (.txt)">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconShield}" Foreground="{DynamicResource VantageAccentBrush}" Width="12" Height="12" VerticalAlignment="Center" />
+                                <TextBlock Text="Ekspor Laporan (TXT)" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Toast Notification Banner -->
+                <Border IsVisible="{Binding ToastMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="14,10">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <PathIcon Grid.Column="0" Data="{StaticResource IconCheckCircle}" Foreground="{DynamicResource VantageGreenBrush}" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding ToastMessage}" Foreground="{DynamicResource VantageTextBrush}" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- 2. MAIN HERO SCAN CARD                                     -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1" CornerRadius="12" Padding="20,18">
+                    <StackPanel Spacing="14">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Border Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="AUTO-DIAGNOSTIC ENGINE" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" FontFamily="Consolas,Monospace" />
+                                    </Border>
+                                    <TextBlock Text="{Binding LastScanTimestamp, StringFormat='Pemeriksaan Terakhir: {0}'}" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <TextBlock Text="{Binding OverallStatusLabel}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}" Margin="0,2,0,0" />
+                                <TextBlock Text="{Binding ScanCurrentStepText}" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <!-- Score Badge -->
+                            <Border Grid.Column="1" Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16,10" VerticalAlignment="Center" Margin="12,0,0,0">
+                                <StackPanel HorizontalAlignment="Center" Spacing="2">
+                                    <TextBlock Text="SKOR KESEHATAN" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VantageAccentHoverBrush}" FontFamily="Consolas,Monospace" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding OverallHealthScore, StringFormat='{}{0}%'}" FontSize="24" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="PRIMA &amp; LOLOS UJI" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VantageAccentHoverBrush}" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- Progress Bar (Shown during scan) -->
+                        <StackPanel Spacing="4" IsVisible="{Binding IsScanning}">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Sedang Menjalankan Pemindaian Komprehensif..." FontSize="11" Foreground="{DynamicResource VantageAccentLightBrush}" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="1" Text="{Binding ScanProgress, StringFormat='{}{0}%'}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageAccentLightBrush}" FontFamily="Consolas,Monospace" />
+                            </Grid>
+                            <ProgressBar Value="{Binding ScanProgress}" Maximum="100" Height="6" CornerRadius="3"
+                                         Foreground="{DynamicResource VantageAccentBrush}" Background="{DynamicResource VantageBgBrush}" />
+                        </StackPanel>
+
+                        <!-- Action Bar -->
+                        <Grid ColumnDefinitions="Auto,*" Margin="0,2,0,0">
+                            <Button Grid.Column="0" Command="{Binding RunFullScanCommand}"
+                                    IsEnabled="{Binding !IsScanning}"
+                                    Background="{DynamicResource VantageAccentBrush}" Foreground="White"
+                                    Padding="18,10" CornerRadius="8" FontSize="12" FontWeight="Bold" Cursor="Hand">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Data="{StaticResource IconRefresh}" Foreground="White" Width="13" Height="13" VerticalAlignment="Center" />
+                                    <TextBlock Text="Mulai Diagnostik Lengkap (Full Scan)" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <WrapPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
+                                <Border Background="{DynamicResource VantageCardSubtleBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                    <TextBlock Text="✓ 6 Modul Siap Diuji" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                </Border>
+                                <Border Background="{DynamicResource VantageCardSubtleBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                                    <TextBlock Text="✓ Beban Komputasi Nyata" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                </Border>
+                                <Border Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,0,4">
+                                    <TextBlock Text="✓ Telemetri Sensor Aktif" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" />
+                                </Border>
+                            </WrapPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- 3. INDIVIDUAL SUBSYSTEM TEST CARDS (3x2 Grid)              -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <TextBlock Text="Status Pengujian 6 Modul Subsistem" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" Margin="0,2,0,0" />
+
+                <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" Margin="0,-4,0,0">
+
+                    <!-- CARD 1: CPU / Processor -->
+                    <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,8,10">
+                        <Grid RowDefinitions="Auto,Auto,*,Auto">
+                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                                <Border Grid.Column="0" Width="34" Height="34" Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="6" Margin="0,0,8,0">
+                                    <PathIcon Data="{StaticResource IconCpu}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="Processor / CPU" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" />
+                                    <TextBlock Text="Komputasi Multi-Core" FontSize="9" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                </StackPanel>
+                                <Border Grid.Column="2" Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="{Binding CpuTest.Status}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Primary Metric -->
+                            <TextBlock Grid.Row="1" Text="{Binding CpuTest.PrimaryMetric}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" Margin="0,8,0,2" />
+
+                            <!-- Detail Verification Step -->
+                            <TextBlock Grid.Row="2" Text="{Binding CpuTest.Detail}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,10" LineHeight="15" />
+
+                            <!-- Action Buttons -->
+                            <Grid Grid.Row="3" ColumnDefinitions="*,Auto">
+                                <Button Grid.Column="0" Command="{Binding TestSingleComponentCommand}" CommandParameter="cpu"
+                                        IsEnabled="{Binding !CpuTest.IsRunning}"
+                                        Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentLightBrush}" Margin="0,0,6,0">
+                                    <TextBlock Text="Uji CPU" />
+                                </Button>
+                                <Button Grid.Column="1" Command="{Binding OpenCpuDetailCommand}"
+                                        Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                        Padding="8,6" CornerRadius="6" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" ToolTip.Tip="Buka Detail Spesifikasi Processor">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="Detail" VerticalAlignment="Center" />
+                                        <PathIcon Data="{StaticResource IconChevronRight}" Width="8" Height="8" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- CARD 2: RAM Memory -->
+                    <Border Grid.Row="0" Grid.Column="1" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="4,0,4,10">
+                        <Grid RowDefinitions="Auto,Auto,*,Auto">
+                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                                <Border Grid.Column="0" Width="34" Height="34" Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="6" Margin="0,0,8,0">
+                                    <PathIcon Data="{StaticResource IconMonitor}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="Memori RAM &amp; Cache" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" />
+                                    <TextBlock Text="Alokasi &amp; Bit Integrity" FontSize="9" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                </StackPanel>
+                                <Border Grid.Column="2" Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="{Binding RamTest.Status}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Primary Metric -->
+                            <TextBlock Grid.Row="1" Text="{Binding RamTest.PrimaryMetric}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" Margin="0,8,0,2" />
+
+                            <!-- Detail Verification Step -->
+                            <TextBlock Grid.Row="2" Text="{Binding RamTest.Detail}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,10" LineHeight="15" />
+
+                            <!-- Action Buttons -->
+                            <Grid Grid.Row="3" ColumnDefinitions="*,Auto">
+                                <Button Grid.Column="0" Command="{Binding TestSingleComponentCommand}" CommandParameter="ram"
+                                        IsEnabled="{Binding !RamTest.IsRunning}"
+                                        Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentLightBrush}" Margin="0,0,6,0">
+                                    <TextBlock Text="Uji RAM" />
+                                </Button>
+                                <Button Grid.Column="1" Command="{Binding OpenRamDetailCommand}"
+                                        Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                        Padding="8,6" CornerRadius="6" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" ToolTip.Tip="Buka Detail Spesifikasi RAM">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="Detail" VerticalAlignment="Center" />
+                                        <PathIcon Data="{StaticResource IconChevronRight}" Width="8" Height="8" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- CARD 3: Storage Drive -->
+                    <Border Grid.Row="0" Grid.Column="2" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="8,0,0,10">
+                        <Grid RowDefinitions="Auto,Auto,*,Auto">
+                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                                <Border Grid.Column="0" Width="34" Height="34" Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="6" Margin="0,0,8,0">
+                                    <PathIcon Data="{StaticResource IconHome}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="Penyimpanan / Storage" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" />
+                                    <TextBlock Text="I/O Throughput &amp; Health" FontSize="9" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                </StackPanel>
+                                <Border Grid.Column="2" Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="{Binding StorageTest.Status}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Primary Metric -->
+                            <TextBlock Grid.Row="1" Text="{Binding StorageTest.PrimaryMetric}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" Margin="0,8,0,2" />
+
+                            <!-- Detail Verification Step -->
+                            <TextBlock Grid.Row="2" Text="{Binding StorageTest.Detail}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,10" LineHeight="15" />
+
+                            <!-- Action Buttons -->
+                            <Grid Grid.Row="3" ColumnDefinitions="*,Auto">
+                                <Button Grid.Column="0" Command="{Binding TestSingleComponentCommand}" CommandParameter="storage"
+                                        IsEnabled="{Binding !StorageTest.IsRunning}"
+                                        Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentLightBrush}" Margin="0,0,6,0">
+                                    <TextBlock Text="Uji Storage" />
+                                </Button>
+                                <Button Grid.Column="1" Command="{Binding OpenStorageDetailCommand}"
+                                        Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                        Padding="8,6" CornerRadius="6" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" ToolTip.Tip="Buka Detail Spesifikasi Storage">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="Detail" VerticalAlignment="Center" />
+                                        <PathIcon Data="{StaticResource IconChevronRight}" Width="8" Height="8" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- CARD 4: Power & Thermal -->
+                    <Border Grid.Row="1" Grid.Column="0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,8,0">
+                        <Grid RowDefinitions="Auto,Auto,*,Auto">
+                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                                <Border Grid.Column="0" Width="34" Height="34" Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="6" Margin="0,0,8,0">
+                                    <PathIcon Data="{StaticResource IconTracking}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="Manajemen Catu Daya" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" />
+                                    <TextBlock Text="Regulasi Daya &amp; Termal" FontSize="9" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                </StackPanel>
+                                <Border Grid.Column="2" Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="{Binding PowerTest.Status}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Primary Metric -->
+                            <TextBlock Grid.Row="1" Text="{Binding PowerTest.PrimaryMetric}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" Margin="0,8,0,2" />
+
+                            <!-- Detail Verification Step -->
+                            <TextBlock Grid.Row="2" Text="{Binding PowerTest.Detail}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,10" LineHeight="15" />
+
+                            <Button Grid.Row="3" Command="{Binding TestSingleComponentCommand}" CommandParameter="power"
+                                    IsEnabled="{Binding !PowerTest.IsRunning}"
+                                    Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentLightBrush}">
+                                <TextBlock Text="Uji Daya &amp; Termal" />
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- CARD 5: BIOS & Firmware Integrity -->
+                    <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="4,0,4,0">
+                        <Grid RowDefinitions="Auto,Auto,*,Auto">
+                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                                <Border Grid.Column="0" Width="34" Height="34" Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="6" Margin="0,0,8,0">
+                                    <PathIcon Data="{StaticResource IconShield}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="Integritas BIOS" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" />
+                                    <TextBlock Text="DMI Whitelist PT JTS" FontSize="9" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                </StackPanel>
+                                <Border Grid.Column="2" Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="{Binding BiosTest.Status}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Primary Metric -->
+                            <TextBlock Grid.Row="1" Text="{Binding BiosTest.PrimaryMetric}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" Margin="0,8,0,2" />
+
+                            <!-- Detail Verification Step -->
+                            <TextBlock Grid.Row="2" Text="{Binding BiosTest.Detail}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,10" LineHeight="15" />
+
+                            <!-- Action Buttons -->
+                            <Grid Grid.Row="3" ColumnDefinitions="*,Auto">
+                                <Button Grid.Column="0" Command="{Binding TestSingleComponentCommand}" CommandParameter="bios"
+                                        IsEnabled="{Binding !BiosTest.IsRunning}"
+                                        Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentLightBrush}" Margin="0,0,6,0">
+                                    <TextBlock Text="Uji Validasi BIOS" />
+                                </Button>
+                                <Button Grid.Column="1" Command="{Binding OpenMotherboardDetailCommand}"
+                                        Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                        Padding="8,6" CornerRadius="6" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" ToolTip.Tip="Buka Detail Spesifikasi Motherboard">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="Detail" VerticalAlignment="Center" />
+                                        <PathIcon Data="{StaticResource IconChevronRight}" Width="8" Height="8" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- CARD 6: Network & Remote Server Quality -->
+                    <Border Grid.Row="1" Grid.Column="2" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="8,0,0,0">
+                        <Grid RowDefinitions="Auto,Auto,*,Auto">
+                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                                <Border Grid.Column="0" Width="34" Height="34" Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="6" Margin="0,0,8,0">
+                                    <PathIcon Data="{StaticResource IconRefresh}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="Jaringan &amp; Remote" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" />
+                                    <TextBlock Text="Server Garansi PT JTS" FontSize="9" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                </StackPanel>
+                                <Border Grid.Column="2" Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="{Binding NetworkTest.Status}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Primary Metric -->
+                            <TextBlock Grid.Row="1" Text="{Binding NetworkTest.PrimaryMetric}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" Margin="0,8,0,2" />
+
+                            <!-- Detail Verification Step -->
+                            <TextBlock Grid.Row="2" Text="{Binding NetworkTest.Detail}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,10" LineHeight="15" />
+
+                            <Button Grid.Row="3" Command="{Binding TestSingleComponentCommand}" CommandParameter="network"
+                                    IsEnabled="{Binding !NetworkTest.IsRunning}"
+                                    Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentLightBrush}">
+                                <TextBlock Text="Uji Ping Server" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- 4. LIVE AUDIT LOG CONSOLE                                  -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <Border Background="#0B1120" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,2,0,0">
+                    <StackPanel Spacing="10">
+                        <!-- Console Header Bar -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Border Width="8" Height="8" Background="#22C55E" CornerRadius="4" VerticalAlignment="Center" />
+                                <TextBlock Text="Terminal Log Telemetri &amp; Audit Pengujian Real-Time" FontSize="13" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
+                                <Border Background="#1E293B" CornerRadius="4" Padding="6,2" Margin="6,0,0,0">
+                                    <TextBlock Text="{Binding DiagnosticLogs.Count, StringFormat='{}{0} Event'}" FontSize="10" FontWeight="Bold" FontFamily="Consolas,Monospace" Foreground="{DynamicResource VantageAccentLightBrush}" />
+                                </Border>
+                            </StackPanel>
+
+                            <Button Grid.Column="1" Command="{Binding CopyLogsCommand}"
+                                    Background="#1E293B" BorderBrush="#334155" BorderThickness="1"
+                                    CornerRadius="6" Padding="10,5" FontSize="11" FontWeight="SemiBold" Foreground="White"
+                                    Cursor="Hand" ToolTip.Tip="Salin seluruh isi log terminal ke clipboard">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <PathIcon Data="{StaticResource IconCopy}" Foreground="{DynamicResource VantageAccentLightBrush}" Width="10" Height="10" VerticalAlignment="Center" />
+                                    <TextBlock Text="Salin Log" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <Separator Background="#1E293B" Height="1" />
+
+                        <!-- Log Stream List -->
+                        <ScrollViewer Height="140" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding DiagnosticLogs}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="75,80,65,*" Margin="0,3,0,3">
+                                             <!-- Timestamp -->
+                                            <TextBlock Grid.Column="0" Text="{Binding Timestamp}" FontFamily="Consolas,Monospace" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" />
+                                            <!-- Subsystem Tag -->
+                                            <Border Grid.Column="1" Background="#1E293B" CornerRadius="3" Padding="4,1" Margin="0,0,6,0" HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding Subsystem}" FontFamily="Consolas,Monospace" FontSize="10" FontWeight="Bold" Foreground="#38BDF8" />
+                                            </Border>
+                                            <!-- Level Badge -->
+                                            <Border Grid.Column="2" Background="#1E293B" CornerRadius="3" Padding="4,1" Margin="0,0,6,0" HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding Level}" FontFamily="Consolas,Monospace" FontSize="10" FontWeight="Bold" Foreground="{Binding LevelColor}" />
+                                            </Border>
+                                            <!-- Message Content -->
+                                            <TextBlock Grid.Column="3" Text="{Binding Message}" FontFamily="Consolas,Monospace" FontSize="11" Foreground="#F8FAFC" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- 5. SYSTEM TELEMETRY INFO STRIP                             -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <Border Background="{DynamicResource VantageCardBrush}" CornerRadius="10" Padding="16,12" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                    <Grid ColumnDefinitions="*,*,*,*">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="MODEL UNIT" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" FontFamily="Consolas,Monospace" />
+                            <TextBlock Text="{Binding HardwareModel}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Text="SERIAL NUMBER" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" FontFamily="Consolas,Monospace" />
+                            <TextBlock Text="{Binding SerialNumber}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" FontFamily="Consolas,Monospace" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="2">
+                            <TextBlock Text="SISTEM OPERASI" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" FontFamily="Consolas,Monospace" />
+                            <TextBlock Text="{Binding OsDescription}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="3" Spacing="2">
+                            <TextBlock Text="VERSI BIOS" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" FontFamily="Consolas,Monospace" />
+                            <TextBlock Text="{Binding BiosVersion}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" FontFamily="Consolas,Monospace" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>

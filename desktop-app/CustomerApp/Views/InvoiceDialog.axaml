@@ -1,0 +1,209 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:CustomerApp.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="850" d:DesignHeight="700"
+        x:Class="CustomerApp.Views.InvoiceDialog"
+        x:DataType="vm:InvoiceViewModel"
+        Title="Faktur Servis Resmi &amp; Jaminan Garansi - PT JTS"
+        Width="880" Height="720"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource VantageBgBrush}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- HEADER KOP RESMI INVOICE                                  -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="0,0,0,1" Padding="24,18">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Border Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="6" Padding="8,4">
+                            <TextBlock Text="PT JTS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" FontFamily="Consolas,Monospace" />
+                        </Border>
+                        <TextBlock Text="PT JAYA TEKNOLOGI SOLUSINDO" FontSize="16" FontWeight="ExtraBold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Text="Sentra Layanan &amp; Klaim Garansi Resmi Hardware Terpadu" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                    <TextBlock Text="Cyber 2 Tower Lt. 18, Jakarta Selatan • Hotline: (021) 5088-7799" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="3">
+                    <Border Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1" CornerRadius="8" Padding="12,6" HorizontalAlignment="Right">
+                        <TextBlock Text="{Binding PaymentStatusBadge}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                    </Border>
+                    <TextBlock Text="{Binding InvoiceNumber}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" FontFamily="Consolas,Monospace" HorizontalAlignment="Right" Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding IssueDateText}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Right" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- CONTENT BODY (Scrollable)                                  -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <ScrollViewer Grid.Row="1" Padding="24,16">
+            <StackPanel Spacing="16">
+                
+                <!-- Info Grid: Pelanggan & Unit -->
+                <Grid ColumnDefinitions="*,*">
+                    <!-- Data Pelanggan -->
+                    <Border Grid.Column="0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,8,0">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="DATA PELANGGAN &amp; ALAMAT" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" FontFamily="Consolas,Monospace" />
+                            <TextBlock Text="{Binding CustomerName}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                            <TextBlock Text="{Binding CustomerAddress}" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Data Unit & Teknisi -->
+                    <Border Grid.Column="1" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="8,0,0,0">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="INFORMASI PERANGKAT &amp; TEKNISI" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" FontFamily="Consolas,Monospace" />
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Column="0" Text="Model: " FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding DeviceModel}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Column="0" Text="Serial No: " FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding SerialNumber}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentBrush}" FontFamily="Consolas,Monospace" />
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Column="0" Text="Teknisi: " FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding TechnicianName}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Tabel Item Tindakan & Suku Cadang -->
+                <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="0" ClipToBounds="True">
+                    <StackPanel>
+                        <!-- Table Header -->
+                        <Border Background="{DynamicResource VantageBgBrush}" Padding="16,10" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="0,0,0,1">
+                            <Grid ColumnDefinitions="3*,1.2*,Auto,1.5*,1.5*,1.5*">
+                                <TextBlock Grid.Column="0" Text="RINCIAN TINDAKAN / SUKU CADANG" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBlock Grid.Column="1" Text="KATEGORI" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBlock Grid.Column="2" Text="QTY" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,16,0" />
+                                <TextBlock Grid.Column="3" Text="HARGA SATUAN" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" TextAlignment="Right" />
+                                <TextBlock Grid.Column="4" Text="STATUS GARANSI" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" TextAlignment="Center" />
+                                <TextBlock Grid.Column="5" Text="DITAGIH KLIEN" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" TextAlignment="Right" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Items Repeater -->
+                        <ItemsControl ItemsSource="{Binding DisplayItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="16,12" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="0,0,0,1">
+                                        <Grid ColumnDefinitions="3*,1.2*,Auto,1.5*,1.5*,1.5*">
+                                            <!-- Item Info -->
+                                            <StackPanel Grid.Column="0" Spacing="2">
+                                                <TextBlock Text="{Binding ItemName}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                                <TextBlock Text="{Binding ItemCode, StringFormat='Part No: {0}'}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" IsVisible="{Binding ItemCode, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontFamily="Consolas,Monospace" />
+                                                <TextBlock Text="{Binding Notes}" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" FontStyle="Italic" IsVisible="{Binding Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            </StackPanel>
+
+                                            <!-- Kategori -->
+                                            <TextBlock Grid.Column="1" Text="{Binding CategoryName}" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" VerticalAlignment="Center" />
+
+                                            <!-- Qty -->
+                                            <TextBlock Grid.Column="2" Text="{Binding Quantity}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" Margin="0,0,16,0" />
+
+                                            <!-- Unit Price -->
+                                            <TextBlock Grid.Column="3" Text="{Binding UnitPriceFormatted}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" TextAlignment="Right" VerticalAlignment="Center" FontFamily="Consolas,Monospace" />
+
+                                            <!-- Warranty Badge -->
+                                            <Border Grid.Column="4" Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1" CornerRadius="6" Padding="6,2" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsCoveredByWarranty}">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <PathIcon Data="{StaticResource IconShield}" Width="10" Height="10" Foreground="{DynamicResource VantageGreenBrush}" VerticalAlignment="Center" />
+                                                    <TextBlock Text="Tercover 100%" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- Customer Payable -->
+                                            <TextBlock Grid.Column="5" Text="{Binding CustomerPayableFormatted}" FontSize="12" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" FontFamily="Consolas,Monospace"
+                                                       Foreground="{DynamicResource VantageGreenBrush}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Calculation Summary & Guarantee Card -->
+                <Grid ColumnDefinitions="1.2*,*">
+                    <!-- Guarantee Banner -->
+                    <Border Grid.Column="0" Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,8,0">
+                        <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconCheckCircle}" Width="14" Height="14" Foreground="{DynamicResource VantageGreenBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="JAMINAN PERLINDUNGAN GARANSI RESMI" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Seluruh penggantian suku cadang dan jasa perbaikan di atas dilindungi oleh Jaminan Garansi Resmi PT Jaya Teknologi Solusindo. Total potongan klaim garansi telah diaplikasikan secara otomatis ke faktur ini."
+                                       FontSize="11" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" LineHeight="16" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Summary Table -->
+                    <Border Grid.Column="1" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="8,0,0,0">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Subtotal Biaya Normal:" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding SubtotalFormatted}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" FontFamily="Consolas,Monospace" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Potongan Garansi Resmi:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageGreenBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding WarrantyDiscountFormatted}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                            </Grid>
+                            <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" Margin="0,4" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Total Tagihan Klien:" FontSize="14" FontWeight="ExtraBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <TextBlock Grid.Column="1" Text="{Binding TotalPayableFormatted}" FontSize="16" FontWeight="ExtraBold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Status Feedback Message (if any) -->
+                <Border Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1" CornerRadius="8" Padding="12,8" IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentBrush}" TextWrapping="Wrap" />
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- FOOTER ACTIONS                                             -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="2" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="0,1,0,0" Padding="24,14">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <PathIcon Data="{StaticResource IconInfo}" Width="12" Height="12" Foreground="{DynamicResource VantageTextSubtleBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="Faktur ini sah secara digital dan dapat digunakan sebagai arsip klaim garansi resmi." FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                    <Button Command="{Binding CloseCommand}"
+                            Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                            Padding="16,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold">
+                        <TextBlock Text="Tutup" />
+                    </Button>
+
+                    <Button Command="{Binding DownloadAndOpenInvoiceCommand}"
+                            IsEnabled="{Binding !IsLoading}"
+                            Background="{DynamicResource VantageAccentBrush}" Foreground="White"
+                            Padding="18,8" CornerRadius="6" FontSize="12" FontWeight="Bold">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{StaticResource IconDownload}" Width="13" Height="13" Foreground="White" VerticalAlignment="Center" />
+                            <TextBlock Text="Unduh / Buka Dokumen Faktur (HTML/PDF)" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

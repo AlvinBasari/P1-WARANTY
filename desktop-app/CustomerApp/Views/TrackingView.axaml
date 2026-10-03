@@ -1,0 +1,276 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CustomerApp.ViewModels"
+             xmlns:models="using:SharedCore.Models"
+             x:Class="CustomerApp.Views.TrackingView"
+             x:DataType="vm:TrackingViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border Padding="28,20,28,32" HorizontalAlignment="Stretch">
+            <StackPanel Spacing="20">
+                <!-- Header -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="Linimasa &amp; Status Perbaikan Service Center" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                        <TextBlock Text="Pantau tahapan pengerjaan unit, suku cadang terpasang, dan estimasi penyelesaian oleh teknisi resmi PT JTS."
+                                   FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" LineHeight="18" />
+                    </StackPanel>
+
+                    <!-- WhatsApp CS Button -->
+                    <Button Grid.Column="1" Command="{Binding ContactWhatsAppCommand}"
+                            Background="#065F46" BorderBrush="#10B981" BorderThickness="1"
+                            Foreground="White" Padding="14,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold"
+                            VerticalAlignment="Center" Cursor="Hand" ToolTip.Tip="Hubungi CS via WhatsApp untuk menanyakan progres tiket ini">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <PathIcon Data="{StaticResource IconWhatsApp}" Width="14" Height="14" Foreground="White" VerticalAlignment="Center" />
+                            <TextBlock Text="Tanya CS WhatsApp" FontWeight="Bold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- When no active tracking -->
+                <Border IsVisible="{Binding !HasTracking}"
+                        Background="{DynamicResource VantageCardBrush}" CornerRadius="12" Padding="48,36" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                        HorizontalAlignment="Stretch">
+                    <StackPanel HorizontalAlignment="Center" Spacing="14">
+                        <Border Width="56" Height="56" Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="28" HorizontalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconTracking}" Foreground="{DynamicResource VantageTextMutedBrush}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="Tidak Ada Unit dalam Antrean Perbaikan" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Unit komputer Anda saat ini beroperasi normal dan tidak sedang dalam penanganan workshop fisik." FontSize="13" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Center" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Active Tracking View -->
+                <StackPanel IsVisible="{Binding HasTracking}" Spacing="18">
+
+                    <!-- 1. Current Status & ETA Hero Card -->
+                    <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1.5" CornerRadius="12" Padding="22">
+                        <StackPanel Spacing="16">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Border Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                            <TextBlock Text="SERVICE CENTER WORKSHOP" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" FontFamily="Consolas,Monospace" />
+                                        </Border>
+                                        <Border Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                            <TextBlock Text="AKTIF" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding StatusDisplay}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}" Margin="0,2,0,0" />
+                                    <TextBlock Text="{Binding ProgressStepText}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentLightBrush}" />
+                                </StackPanel>
+
+                                <!-- ETA Badge -->
+                                <Border Grid.Column="1" Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,10" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconClock}" Foreground="{DynamicResource VantageAccentHoverBrush}" Width="16" Height="16" VerticalAlignment="Center" />
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="ESTIMASI SELESAI (ETA)" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VantageAccentHoverBrush}" FontFamily="Consolas,Monospace" />
+                                            <TextBlock Text="{Binding EstimatedCompletionText}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- Live Progress Bar -->
+                            <StackPanel Spacing="4">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Progres Penanganan &amp; Quality Control" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding ProgressPercentage, StringFormat='{}{0}%'}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageAccentLightBrush}" FontFamily="Consolas,Monospace" />
+                                </Grid>
+                                <ProgressBar Value="{Binding ProgressPercentage}" Maximum="100" Height="8" CornerRadius="4"
+                                             Foreground="{DynamicResource VantageAccentBrush}" Background="{DynamicResource VantageBgBrush}" />
+                            </StackPanel>
+
+                            <!-- 5-Stage Stepper Track -->
+                            <Border Background="{DynamicResource VantageBgBrush}" CornerRadius="10" Padding="14,12" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                                <Grid ColumnDefinitions="*,*,*,*,*">
+                                    <!-- Step 1 -->
+                                    <StackPanel Grid.Column="0" HorizontalAlignment="Center" Spacing="4">
+                                        <Border Width="24" Height="24" CornerRadius="12" Background="{DynamicResource VantageAccentBrush}" HorizontalAlignment="Center">
+                                            <TextBlock Text="1" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="Penjemputan" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" />
+                                        <TextBlock Text="Unit Dijemput" FontSize="8" Foreground="{DynamicResource VantageTextSubtleBrush}" HorizontalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <!-- Step 2 -->
+                                    <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="4">
+                                        <Border Width="24" Height="24" CornerRadius="12" Background="{DynamicResource VantageAccentBrush}" HorizontalAlignment="Center">
+                                            <TextBlock Text="2" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="Intake Workshop" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" />
+                                        <TextBlock Text="Tiba di Pusat" FontSize="8" Foreground="{DynamicResource VantageTextSubtleBrush}" HorizontalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <!-- Step 3 -->
+                                    <StackPanel Grid.Column="2" HorizontalAlignment="Center" Spacing="4">
+                                        <Border Width="24" Height="24" CornerRadius="12" Background="{DynamicResource VantageAccentBrush}" HorizontalAlignment="Center">
+                                            <TextBlock Text="3" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="Perbaikan Hardware" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" />
+                                        <TextBlock Text="Tindakan Part" FontSize="8" Foreground="{DynamicResource VantageTextSubtleBrush}" HorizontalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <!-- Step 4 -->
+                                    <StackPanel Grid.Column="3" HorizontalAlignment="Center" Spacing="4">
+                                        <Border Width="24" Height="24" CornerRadius="12" Background="{DynamicResource VantageCardSubtleBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" HorizontalAlignment="Center">
+                                            <TextBlock Text="4" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="Quality Control" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Center" />
+                                        <TextBlock Text="Uji Beban Stres" FontSize="8" Foreground="{DynamicResource VantageTextSubtleBrush}" HorizontalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <!-- Step 5 -->
+                                    <StackPanel Grid.Column="4" HorizontalAlignment="Center" Spacing="4">
+                                        <Border Width="24" Height="24" CornerRadius="12" Background="{DynamicResource VantageCardSubtleBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" HorizontalAlignment="Center">
+                                            <TextBlock Text="5" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="Pengembalian" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Center" />
+                                        <TextBlock Text="Serah Terima" FontSize="8" Foreground="{DynamicResource VantageTextSubtleBrush}" HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Workshop & Technician Info Strip -->
+                            <Border Background="{DynamicResource VantageBgBrush}" CornerRadius="8" Padding="14,10" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                                <Grid ColumnDefinitions="*,*">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconService}" Width="14" Height="14" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding LeadTechnicianName, StringFormat='Teknisi: {0}'}" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                        <PathIcon Data="{StaticResource IconLocation}" Width="14" Height="14" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding WorkshopLocation, StringFormat='Lokasi: {0}'}" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextTrimming="CharacterEllipsis" MaxWidth="360" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 2. Official Repair Invoice & Warranty Coverage Card -->
+                    <Border IsVisible="{Binding HasInvoice}" Background="{DynamicResource VantageCardBrush}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Border Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="FAKTUR RESMI &amp; JAMINAN GARANSI" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" FontFamily="Consolas,Monospace" />
+                                    </Border>
+                                    <Border Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="{Binding InvoiceStatusBadge}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="{Binding InvoiceNumberText, StringFormat='No. Faktur: {0}'}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <TextBlock Text="Rincian biaya pengerjaan dan suku cadang resmi telah dipotong 100% oleh jaminan garansi aktif PT JTS." FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" />
+                                <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,4,0,0">
+                                    <TextBlock Text="{Binding InvoiceSubtotalText, StringFormat='Subtotal: {0}'}" FontSize="12" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                    <TextBlock Text="{Binding InvoiceWarrantyDiscountText, StringFormat='Potongan Garansi: {0}'}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageGreenBrush}" />
+                                    <TextBlock Text="{Binding InvoiceTotalPayableText, StringFormat='Total Tagihan: {0}'}" FontSize="12" FontWeight="ExtraBold" Foreground="{DynamicResource VantageGreenBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Button Grid.Column="1" Command="{Binding OpenInvoiceDialogCommand}"
+                                    Background="{DynamicResource VantageAccentBrush}" Foreground="White"
+                                    Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="Bold"
+                                    VerticalAlignment="Center" Margin="16,0,0,0">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Data="{StaticResource IconReceipt}" Width="14" Height="14" Foreground="White" VerticalAlignment="Center" />
+                                    <TextBlock Text="Buka &amp; Unduh Faktur" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- 3. Replaced Spareparts & Components List (Only if parts were replaced) -->
+                    <Border IsVisible="{Binding HasSpareParts}" Background="{DynamicResource VantageCardBrush}" CornerRadius="12" Padding="22" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="16">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="3">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconShield}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" VerticalAlignment="Center" />
+                                        <TextBlock Text="Suku Cadang &amp; Komponen Resmi yang Diganti" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Text="Semua komponen pengganti adalah unit original PT JTS bersertifikasi dengan garansi resmi tersendiri." FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                </StackPanel>
+
+                                <Border Grid.Column="1" Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1" CornerRadius="6" Padding="10,4" VerticalAlignment="Center">
+                                    <TextBlock Text="ORIGINAL OEM PART" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageAccentHoverBrush}" FontFamily="Consolas,Monospace" />
+                                </Border>
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding ReplacedParts}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:SparePartItem">
+                                        <Border Margin="0,0,0,10" Padding="16,14" Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="8">
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <Border Grid.Column="0" Width="36" Height="36" Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="8" Margin="0,0,14,0">
+                                                    <PathIcon Data="{StaticResource IconCheck}" Foreground="{DynamicResource VantageAccentHoverBrush}" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+
+                                                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource VantageTextBrush}" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                                        <TextBlock Text="{Binding PartNumber, StringFormat='Part No: {0}'}" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" FontFamily="Consolas,Monospace" />
+                                                        <TextBlock Text="•" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                                        <TextBlock Text="{Binding Category}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="2" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                    <Border Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="4" Padding="8,3" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageAccentHoverBrush}" FontFamily="Consolas,Monospace" />
+                                                    </Border>
+                                                    <TextBlock Text="{Binding WarrantyCoverage}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Right" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 3. History Log & Technician Notes -->
+                    <Border Background="{DynamicResource VantageCardBrush}" CornerRadius="12" Padding="22" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="16">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconHistory}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" VerticalAlignment="Center" />
+                                <TextBlock Text="Riwayat Log &amp; Catatan Teknisi Workshop" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <ItemsControl ItemsSource="{Binding Histories}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:RepairTrackingHistoryDto">
+                                        <Border Margin="0,0,0,10" Padding="14,12" Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="8">
+                                            <Grid ColumnDefinitions="Auto,*">
+                                                <Border Grid.Column="0" Width="4" Background="{DynamicResource VantageAccentBrush}" CornerRadius="2" Margin="0,0,12,0" />
+                                                <StackPanel Grid.Column="1" Spacing="4">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Status}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" FontFamily="Consolas,Monospace" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding CreatedAt}" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" FontFamily="Consolas,Monospace" />
+                                                    </Grid>
+                                                    <TextBlock Text="{Binding Notes}" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" LineHeight="17" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Command="{Binding RefreshCommand}"
+                            Background="{DynamicResource VantageCardBrush}" Foreground="White"
+                            BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                            HorizontalAlignment="Center" Padding="18,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <PathIcon Data="{StaticResource IconRefresh}" Foreground="{DynamicResource VantageAccentBrush}" Width="13" Height="13" VerticalAlignment="Center" />
+                            <TextBlock Text="Segarkan Status Terkini" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>

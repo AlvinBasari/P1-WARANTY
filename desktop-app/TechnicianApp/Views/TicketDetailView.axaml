@@ -1,0 +1,400 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TechnicianApp.ViewModels"
+             x:Class="TechnicianApp.Views.TicketDetailView"
+             x:DataType="vm:TicketDetailViewModel">
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="24,16,24,20" Background="{DynamicResource VantageBgBrush}">
+        <!-- Row 0: Top Bar with Back Button & Ticket Summary -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,16">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Button Command="{Binding BackToQueueCommand}"
+                        Background="{DynamicResource VantageCardBrush}"
+                        BorderBrush="{DynamicResource VantageBorderBrush}"
+                        BorderThickness="1"
+                        Foreground="{DynamicResource VantageTextBrush}"
+                        Padding="10,8">
+                    <Grid ColumnDefinitions="Auto,Auto">
+                        <PathIcon Grid.Column="0" Data="{DynamicResource IconArrowLeft}" Width="13" Height="13" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="Kembali ke Antrean" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </Grid>
+                </Button>
+
+                <TextBlock Text="{Binding Ticket.Id, StringFormat='Detail Tiket #{0}'}"
+                           FontSize="18"
+                           FontWeight="Black"
+                           Foreground="{DynamicResource VantageTextBrush}"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <!-- Damage Badge -->
+                <Border Background="{Binding Ticket.DamageCategory, Converter={StaticResource DamageCategoryBadgeBgConverter}}"
+                        CornerRadius="6" Padding="10,5">
+                    <TextBlock Text="{Binding Ticket.DamageCategory, Converter={StaticResource DamageCategoryTextConverter}}"
+                               FontSize="11" FontWeight="Bold"
+                               Foreground="{Binding Ticket.DamageCategory, Converter={StaticResource DamageCategoryBadgeFgConverter}}"/>
+                </Border>
+
+                <!-- Status Badge -->
+                <Border Background="{Binding Ticket.Status, Converter={StaticResource StatusBadgeBgConverter}}"
+                        CornerRadius="6" Padding="10,5">
+                    <TextBlock Text="{Binding Ticket.Status, Converter={StaticResource StatusTextConverter}}"
+                               FontSize="11" FontWeight="Bold"
+                               Foreground="{Binding Ticket.Status, Converter={StaticResource StatusBadgeFgConverter}}"/>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- Row 1: Main Content 2-Column Grid -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid ColumnDefinitions="*,1.2*" Margin="0,0,0,12">
+                <!-- Left Column: Information Cards -->
+                <StackPanel Grid.Column="0" Spacing="16" Margin="0,0,12,0">
+                    <!-- Customer Card -->
+                    <Border Background="{DynamicResource VantageCardBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="INFORMASI PELANGGAN" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" LetterSpacing="0.8"/>
+                            
+                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Nama Klien" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,12,6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CustomerName}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" Margin="0,0,0,6"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Email" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,12,6"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CustomerEmail}" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" Margin="0,0,0,6"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="WhatsApp / Telp" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,12,0"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CustomerWhatsApp}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentLightBrush}"/>
+                            </Grid>
+
+                            <Separator Background="{DynamicResource VantageBorderBrush}" Margin="0,4"/>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Alamat Pelanggan:" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+                                <TextBlock Text="{Binding CustomerAddress}" FontSize="11" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Device & Warranty Card -->
+                    <Border Background="{DynamicResource VantageCardBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="PERANGKAT &amp; JAMINAN GARANSI" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" LetterSpacing="0.8"/>
+                            
+                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Model Unit" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,12,6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DeviceModel}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageAccentLightBrush}" Margin="0,0,0,6"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Nomor Seri (SN)" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,12,6"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DeviceSerial}" FontSize="11" FontFamily="Consolas,Monospace" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" Margin="0,0,0,6"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Status Garansi" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,12,0"/>
+                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                    <Border Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="{Binding WarrantyStatusText}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}"/>
+                                    </Border>
+                                    <TextBlock Text="{Binding WarrantyExpiryText, StringFormat='({0})'}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Issue Description Card -->
+                    <Border Background="{DynamicResource VantageCardBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="RINCIAN KELUHAN &amp; KENDALA" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" LetterSpacing="0.8"/>
+                            <TextBlock Text="{Binding Ticket.Description}" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" LineHeight="18"/>
+
+                            <Border Background="{DynamicResource VantageCardSubtleBrush}" CornerRadius="8" Padding="10" Margin="0,6,0,0">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Preferensi Jadwal Klien:" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+                                    <TextBlock Text="{Binding Ticket.PreferredSchedule, FallbackValue='Tidak ada preferensi khusus'}" FontSize="11" Foreground="{DynamicResource VantageAccentLightBrush}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Right Column: Action Hub -->
+                <StackPanel Grid.Column="1" Spacing="16" Margin="12,0,0,0">
+                    <!-- Section A: Remote Assistance (If Remote) -->
+                    <Border IsVisible="{Binding IsRemoteTicket}"
+                            Background="{DynamicResource VantageCardBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="18">
+                        <StackPanel Spacing="14">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <PathIcon Grid.Column="0" Data="{DynamicResource IconBolt}" Width="16" Height="16" Foreground="{DynamicResource VantageAccentLightBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="1" Text="KONTROL REMOTE ASSISTANCE (RUSTDESK)" FontSize="12" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <!-- RustDesk Launcher Tile -->
+                            <Border Background="{DynamicResource VantageCardSubtleBrush}"
+                                    BorderBrush="{DynamicResource VantageAccentBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="14">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="SESSION ID KLIEN" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" LetterSpacing="0.8"/>
+                                    <TextBlock Text="{Binding RustdeskSessionId}" FontSize="18" FontWeight="Black" FontFamily="Consolas,Monospace" Foreground="{DynamicResource VantageAccentLightBrush}"/>
+                                    
+                                    <Button Command="{Binding LaunchRustDeskCommand}"
+                                            Background="{DynamicResource VantageAccentBrush}"
+                                            Foreground="White"
+                                            FontWeight="Bold"
+                                            FontSize="12"
+                                            Padding="12,10"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center">
+                                        <Grid ColumnDefinitions="Auto,*">
+                                            <PathIcon Grid.Column="0" Data="{DynamicResource IconMonitor}" Width="14" Height="14" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="1-Klik Buka Subprocess RustDesk" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Schedule Appointment Form -->
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="PENETAPAN JADWAL RESMI SESI REMOTE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding NewScheduleInput, Mode=TwoWay}"
+                                             Watermark="Contoh: 2026-09-08 14:00 WIB"
+                                             FontSize="12"
+                                             Margin="0,0,8,0"/>
+                                    <Button Grid.Column="1"
+                                            Command="{Binding ScheduleRemoteSessionCommand}"
+                                            Background="{DynamicResource VantageCardSubtleBrush}"
+                                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                                            BorderThickness="1"
+                                            Foreground="{DynamicResource VantageTextBrush}"
+                                            FontWeight="SemiBold"
+                                            FontSize="11"
+                                            Padding="12,9">
+                                        <TextBlock Text="Tetapkan Jadwal"/>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+
+                            <Separator Background="{DynamicResource VantageBorderBrush}"/>
+
+                            <!-- End Session & Notes -->
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="CATATAN DIAGNOSA &amp; AKHIRI SESI" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+                                <TextBox Text="{Binding DiagnosisNotes, Mode=TwoWay}"
+                                         Watermark="Tuliskan catatan perbaikan atau konfigurasi yang dilakukan..."
+                                         AcceptsReturn="True"
+                                         Height="60"
+                                         FontSize="12"/>
+
+                                <Grid ColumnDefinitions="*,*">
+                                    <Button Grid.Column="0"
+                                            Command="{Binding EndRemoteSessionCommand}"
+                                            CommandParameter="completed"
+                                            Background="{DynamicResource VantageGreenBrush}"
+                                            Foreground="White"
+                                            FontWeight="Bold"
+                                            FontSize="11"
+                                            Padding="10,8"
+                                            Margin="0,0,4,0"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center">
+                                        <TextBlock Text="✓ Selesai &amp; Sukses"/>
+                                    </Button>
+
+                                    <Button Grid.Column="1"
+                                            Command="{Binding EndRemoteSessionCommand}"
+                                            CommandParameter="failed"
+                                            Background="{DynamicResource VantageFaultBrush}"
+                                            Foreground="White"
+                                            FontWeight="Bold"
+                                            FontSize="11"
+                                            Padding="10,8"
+                                            Margin="4,0,0,0"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center">
+                                        <TextBlock Text="Gagal / Perlu On-Site"/>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section B: On-Site Service Management (If On-Site) -->
+                    <Border IsVisible="{Binding IsOnSiteTicket}"
+                            Background="{DynamicResource VantageCardBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="18">
+                        <StackPanel Spacing="14">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <PathIcon Grid.Column="0" Data="{DynamicResource IconLocation}" Width="16" Height="16" Foreground="{DynamicResource VantageAmberBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="1" Text="MANAJEMEN SERVIS ON-SITE" FontSize="12" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <!-- GPS Coordinates Tile -->
+                            <Border Background="{DynamicResource VantageCardSubtleBrush}"
+                                    BorderBrush="{DynamicResource VantageBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="KOORDINAT GPS TERKALIBRASI" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" LetterSpacing="0.8"/>
+                                    <TextBlock Text="{Binding LocationCoordinatesText}" FontSize="13" FontWeight="Bold" FontFamily="Consolas,Monospace" Foreground="{DynamicResource VantageAmberBrush}"/>
+                                    <TextBlock Text="{Binding LocationLabelText}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+
+                                    <Grid ColumnDefinitions="*,*" Margin="0,6,0,0">
+                                        <Button Grid.Column="0"
+                                                Command="{Binding OpenGoogleMapsCommand}"
+                                                Background="{DynamicResource VantageCardBrush}"
+                                                BorderBrush="{DynamicResource VantageBorderBrush}"
+                                                BorderThickness="1"
+                                                Foreground="{DynamicResource VantageTextBrush}"
+                                                FontSize="11"
+                                                FontWeight="SemiBold"
+                                                Padding="8,8"
+                                                Margin="0,0,4,0"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center">
+                                            <Grid ColumnDefinitions="Auto,*">
+                                                <PathIcon Grid.Column="0" Data="{DynamicResource IconLocation}" Width="12" Height="12" Foreground="{DynamicResource VantageAmberBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="Buka Rute Maps" HorizontalAlignment="Center"/>
+                                            </Grid>
+                                        </Button>
+
+                                        <Button Grid.Column="1"
+                                                Command="{Binding OpenWhatsAppCommand}"
+                                                Background="{DynamicResource VantageGreenSubtleBrush}"
+                                                BorderBrush="{DynamicResource VantageGreenBrush}"
+                                                BorderThickness="1"
+                                                Foreground="{DynamicResource VantageGreenBrush}"
+                                                FontSize="11"
+                                                FontWeight="Bold"
+                                                Padding="8,8"
+                                                Margin="4,0,0,0"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center">
+                                            <Grid ColumnDefinitions="Auto,*">
+                                                <PathIcon Grid.Column="0" Data="{DynamicResource IconWhatsApp}" Width="12" Height="12" Foreground="{DynamicResource VantageGreenBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="Chat WhatsApp" HorizontalAlignment="Center"/>
+                                            </Grid>
+                                        </Button>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- On-Site Outcome Actions -->
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="HASIL PEMERIKSAAN DI TEMPAT" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+                                
+                                <Grid ColumnDefinitions="*,*">
+                                    <Button Grid.Column="0"
+                                            Command="{Binding MarkCompletedOnSiteCommand}"
+                                            Background="{DynamicResource VantageGreenBrush}"
+                                            Foreground="White"
+                                            FontWeight="Bold"
+                                            FontSize="11"
+                                            Padding="10,9"
+                                            Margin="0,0,4,0"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center">
+                                        <TextBlock Text="✓ Selesai di Tempat"/>
+                                    </Button>
+
+                                    <Button Grid.Column="1"
+                                            Command="{Binding EscalateToWorkshopCommand}"
+                                            Background="{DynamicResource VantageAccentBrush}"
+                                            Foreground="White"
+                                            FontWeight="Bold"
+                                            FontSize="11"
+                                            Padding="10,9"
+                                            Margin="4,0,0,0"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center">
+                                        <TextBlock Text="Bawa ke Service Center"/>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section C: Workshop Stepper & Invoice Tools -->
+                    <Border Background="{DynamicResource VantageCardBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="MODUL WORKSHOP &amp; FAKTUR" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" LetterSpacing="0.8"/>
+                            
+                            <Grid ColumnDefinitions="*,*">
+                                <Button Grid.Column="0"
+                                        Command="{Binding OpenWorkshopTrackingCommand}"
+                                        Background="{DynamicResource VantageCardSubtleBrush}"
+                                        BorderBrush="{DynamicResource VantageBorderBrush}"
+                                        BorderThickness="1"
+                                        Foreground="{DynamicResource VantageTextBrush}"
+                                        FontWeight="SemiBold"
+                                        FontSize="12"
+                                        Padding="10,10"
+                                        Margin="0,0,4,0"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center">
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <PathIcon Grid.Column="0" Data="{DynamicResource IconTracking}" Width="14" Height="14" Foreground="{DynamicResource VantageAccentLightBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="Workshop Stepper" HorizontalAlignment="Center"/>
+                                    </Grid>
+                                </Button>
+
+                                <Button Grid.Column="1"
+                                        Command="{Binding OpenInvoiceManagerCommand}"
+                                        Background="{DynamicResource VantageCardSubtleBrush}"
+                                        BorderBrush="{DynamicResource VantageBorderBrush}"
+                                        BorderThickness="1"
+                                        Foreground="{DynamicResource VantageTextBrush}"
+                                        FontWeight="SemiBold"
+                                        FontSize="12"
+                                        Padding="10,10"
+                                        Margin="4,0,0,0"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center">
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <PathIcon Grid.Column="0" Data="{DynamicResource IconReceipt}" Width="14" Height="14" Foreground="{DynamicResource VantageGreenBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="Kelola Faktur" HorizontalAlignment="Center"/>
+                                    </Grid>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- Row 2: Status Message Toast Bar -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource VantageCardBrush}"
+                BorderBrush="{DynamicResource VantageAccentBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12,8"
+                IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotNullOrEmptyToBoolConverter}}">
+            <TextBlock Text="{Binding StatusMessage}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentLightBrush}"/>
+        </Border>
+    </Grid>
+</UserControl>

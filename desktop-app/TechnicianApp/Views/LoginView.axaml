@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TechnicianApp.ViewModels"
+             x:Class="TechnicianApp.Views.LoginView"
+             x:DataType="vm:TechnicianAuthViewModel">
+
+    <Grid Background="{DynamicResource VantageBgBrush}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Border VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24" MaxWidth="440">
+                <Border Background="{DynamicResource VantageCardBrush}"
+                        BorderBrush="{DynamicResource VantageBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="14"
+                        Padding="28"
+                        BoxShadow="0 8 24 0 #20000000">
+                    <StackPanel Spacing="16">
+                        <!-- Header / Logo -->
+                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                            <Border Width="48" Height="48" CornerRadius="10" Background="{DynamicResource VantageAccentBrush}" HorizontalAlignment="Center" Margin="0,0,0,4">
+                                <PathIcon Data="{DynamicResource IconService}" Width="24" Height="24" Foreground="White"/>
+                            </Border>
+                            <TextBlock Text="TECHNICIAN WORKBENCH"
+                                       FontSize="16"
+                                       FontWeight="Black"
+                                       LetterSpacing="1.5"
+                                       Foreground="{DynamicResource VantageTextBrush}"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="Sistem Manajemen Servis &amp; Klaim Garansi PT JTS"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource VantageTextMutedBrush}"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+
+                        <Separator Background="{DynamicResource VantageBorderBrush}" Margin="0,4"/>
+
+                        <!-- Server Status Indicator -->
+                        <Border Background="{DynamicResource VantageCardSubtleBrush}"
+                                BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="10,8">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <PathIcon Grid.Column="0" Data="{DynamicResource IconMonitor}" Width="14" Height="14" Foreground="{DynamicResource VantageAccentLightBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="1" Text="{Binding ConnectionStatusText}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource VantageTextMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="2" Command="{Binding CheckConnectionCommand}" Padding="6,4" Background="Transparent" BorderBrush="Transparent" Cursor="Hand" ToolTip.Tip="Periksa Koneksi Server">
+                                    <PathIcon Data="{DynamicResource IconRefresh}" Width="12" Height="12" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <!-- Error Box -->
+                        <Border Background="{DynamicResource VantageFaultSubtleBrush}"
+                                BorderBrush="{DynamicResource VantageFaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12,10"
+                                IsVisible="{Binding ErrorMessage, Converter={StaticResource StringNotNullOrEmptyToBoolConverter}}">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <PathIcon Grid.Column="0" Data="{DynamicResource IconAlert}" Width="14" Height="14" Foreground="{DynamicResource VantageFaultBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="1" Text="{Binding ErrorMessage}" Foreground="{DynamicResource VantageFaultBrush}" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Email Field -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="EMAIL TEKNISI" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" LetterSpacing="0.8"/>
+                            <TextBox Text="{Binding Email, Mode=TwoWay}"
+                                     Watermark="technician@warranty.com"
+                                     FontSize="13"/>
+                        </StackPanel>
+
+                        <!-- Password Field -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="KATA SANDI" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" LetterSpacing="0.8"/>
+                            <TextBox Text="{Binding Password, Mode=TwoWay}"
+                                     PasswordChar="•"
+                                     Watermark="••••••••"
+                                     FontSize="13"/>
+                        </StackPanel>
+
+                        <!-- Server Endpoint Field (Collapsible / Compact) -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="ENDPOINT BACKEND API" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" LetterSpacing="0.8"/>
+                            <TextBox Text="{Binding ServerUrl, Mode=TwoWay}"
+                                     FontSize="11"
+                                     FontFamily="Consolas,Monospace"/>
+                        </StackPanel>
+
+                        <!-- Action Buttons -->
+                        <StackPanel Spacing="10" Margin="0,6,0,0">
+                            <Button Command="{Binding LoginCommand}"
+                                    IsEnabled="{Binding !IsLoading}"
+                                    Background="{DynamicResource VantageAccentBrush}"
+                                    Foreground="White"
+                                    FontWeight="Bold"
+                                    FontSize="13"
+                                    Padding="14,12"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <PathIcon Grid.Column="0" Data="{DynamicResource IconLock}" Width="14" Height="14" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="Masuk ke Workbench" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Button>
+
+                            <Button Command="{Binding FillDemoCredentialsCommand}"
+                                    Background="{DynamicResource VantageCardSubtleBrush}"
+                                    BorderBrush="{DynamicResource VantageBorderBrush}"
+                                    BorderThickness="1"
+                                    Foreground="{DynamicResource VantageTextBrush}"
+                                    FontWeight="SemiBold"
+                                    FontSize="11"
+                                    Padding="10,8"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <PathIcon Grid.Column="0" Data="{DynamicResource IconBolt}" Width="12" Height="12" Foreground="{DynamicResource VantageAmberBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="Demo Auto-Fill (technician@warranty.com)" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Border>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

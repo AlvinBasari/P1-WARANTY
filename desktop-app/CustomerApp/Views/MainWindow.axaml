@@ -1,0 +1,285 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:CustomerApp.ViewModels"
+        xmlns:views="using:CustomerApp.Views"
+        x:Class="CustomerApp.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="PT Jaya Teknologi Solusi - JTS Device &amp; Warranty Support"
+        Width="1200" Height="800"
+        MinWidth="960" MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource VantageBgBrush}">
+
+    <Design.DataContext>
+        <!-- Mock design-time context can be added here if needed -->
+    </Design.DataContext>
+
+    <Window.DataTemplates>
+        <DataTemplate DataType="{x:Type vm:AuthViewModel}">
+            <views:AuthView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:WarrantyViewModel}">
+            <views:WarrantyView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:DiagnosticViewModel}">
+            <views:DiagnosticView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ComponentDetailViewModel}">
+            <views:ComponentDetailView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ClaimViewModel}">
+            <views:ClaimView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:TrackingViewModel}">
+            <views:TrackingView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:LocationViewModel}">
+            <views:LocationView />
+        </DataTemplate>
+    </Window.DataTemplates>
+
+    <Grid ColumnDefinitions="Auto,*">
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- 1. LEFT ERGONOMIC NAVIGATION SIDEBAR                       -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <Border Grid.Column="0" Width="220" Background="{DynamicResource VantageSidebarBrush}"
+                BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="0,0,1,0"
+                IsVisible="{Binding IsAuthenticated}">
+            <Grid RowDefinitions="Auto,*,Auto" Margin="14,18">
+
+                <!-- Brand Header (PT Jaya Teknologi Solusi) -->
+                <StackPanel Grid.Row="0" Spacing="14">
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <Border Width="40" Height="36" Background="{DynamicResource VantageJtsLogoBrush}" CornerRadius="8"
+                                Padding="2,4">
+                            <TextBlock Text="JTS" Foreground="White" FontWeight="Black" FontSize="15"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" LetterSpacing="0.5" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center" Spacing="1">
+                            <TextBlock Text="JTS Vantage" Foreground="{DynamicResource VantageTextBrush}" FontWeight="Bold" FontSize="14" />
+                            <TextBlock Text="Device Support" Foreground="{DynamicResource VantageTextMutedBrush}" FontSize="10" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+                </StackPanel>
+
+                <!-- Navigation Menu (Icon + Label + Subtitle) -->
+                <StackPanel Grid.Row="1" Spacing="6" Margin="0,14,0,0">
+                    <!-- Tab 1: Dashboard / Home -->
+                    <Button Classes="vantage-nav-tab"
+                            Classes.active="{Binding ActiveTab, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Warranty}"
+                            Command="{Binding NavigateToTabCommand}" CommandParameter="Warranty">
+                        <Grid ColumnDefinitions="4,24,*">
+                            <!-- Left Active Accent Strip -->
+                            <Border Grid.Column="0" Width="3" CornerRadius="1.5" Background="{DynamicResource VantageAccentBrush}"
+                                    IsVisible="{Binding ActiveTab, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Warranty}" Margin="0,0,2,0" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconHome}"
+                                      Width="18" Height="18" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="2" Margin="8,0,0,0" Spacing="1">
+                                <TextBlock Classes="nav-title" Text="Dashboard Unit" />
+                                <TextBlock Text="Hardware &amp; Garansi" Foreground="{DynamicResource VantageTextSubtleBrush}" FontSize="10" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+
+                    <!-- Tab 2: Diagnostik Hardware (Dedicated Sidebar Tab) -->
+                    <Button Classes="vantage-nav-tab"
+                            Classes.active="{Binding ActiveTab, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Diagnostic}"
+                            Command="{Binding NavigateToTabCommand}" CommandParameter="Diagnostic">
+                        <Grid ColumnDefinitions="4,24,*">
+                            <!-- Left Active Accent Strip -->
+                            <Border Grid.Column="0" Width="3" CornerRadius="1.5" Background="{DynamicResource VantageAccentBrush}"
+                                    IsVisible="{Binding ActiveTab, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Diagnostic}" Margin="0,0,2,0" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconCpu}"
+                                      Width="18" Height="18" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="2" Margin="8,0,0,0" Spacing="1">
+                                <TextBlock Classes="nav-title" Text="Diagnostik Mandiri" />
+                                <TextBlock Text="Uji Kesehatan PC" Foreground="{DynamicResource VantageTextSubtleBrush}" FontSize="10" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+
+                    <!-- Tab 3: Detail Komponen (Hardware Inspector) -->
+                    <Button Classes="vantage-nav-tab"
+                            Classes.active="{Binding ActiveTab, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=ComponentDetail}"
+                            Command="{Binding NavigateToTabCommand}" CommandParameter="ComponentDetail">
+                        <Grid ColumnDefinitions="4,24,*">
+                            <!-- Left Active Accent Strip -->
+                            <Border Grid.Column="0" Width="3" CornerRadius="1.5" Background="{DynamicResource VantageAccentBrush}"
+                                    IsVisible="{Binding ActiveTab, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=ComponentDetail}" Margin="0,0,2,0" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconMonitor}"
+                                      Width="18" Height="18" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="2" Margin="8,0,0,0" Spacing="1">
+                                <TextBlock Classes="nav-title" Text="Detail Komponen" />
+                                <TextBlock Text="Spesifikasi Lengkap" Foreground="{DynamicResource VantageTextSubtleBrush}" FontSize="10" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+
+                    <!-- Tab 4: Klaim & Bantuan Servis -->
+                    <Button Classes="vantage-nav-tab"
+                            Classes.active="{Binding ActiveTab, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Claim}"
+                            Command="{Binding NavigateToTabCommand}" CommandParameter="Claim">
+                        <Grid ColumnDefinitions="4,24,*">
+                            <!-- Left Active Accent Strip -->
+                            <Border Grid.Column="0" Width="3" CornerRadius="1.5" Background="{DynamicResource VantageAccentBrush}"
+                                    IsVisible="{Binding ActiveTab, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Claim}" Margin="0,0,2,0" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconService}"
+                                      Width="18" Height="18" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="2" Margin="8,0,0,0" Spacing="1">
+                                <TextBlock Classes="nav-title" Text="Pusat Bantuan" />
+                                <TextBlock Text="Remote &amp; On-Site" Foreground="{DynamicResource VantageTextSubtleBrush}" FontSize="10" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+
+                    <!-- Tab 5: Tracking Service Center -->
+                    <Button Classes="vantage-nav-tab"
+                            Classes.active="{Binding ActiveTab, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Tracking}"
+                            Command="{Binding NavigateToTabCommand}" CommandParameter="Tracking">
+                        <Grid ColumnDefinitions="4,24,*">
+                            <!-- Left Active Accent Strip -->
+                            <Border Grid.Column="0" Width="3" CornerRadius="1.5" Background="{DynamicResource VantageAccentBrush}"
+                                    IsVisible="{Binding ActiveTab, Converter={x:Static vm:MainConverters.CategoryEquals}, ConverterParameter=Tracking}" Margin="0,0,2,0" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconTracking}"
+                                      Width="18" Height="18" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="2" Margin="8,0,0,0" Spacing="1">
+                                <TextBlock Classes="nav-title" Text="Linimasa Servis" />
+                                <TextBlock Text="Status Workshop" Foreground="{DynamicResource VantageTextSubtleBrush}" FontSize="10" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+                </StackPanel>
+
+                <!-- Bottom Footer Controls (Theme Switcher + Logout) -->
+                <StackPanel Grid.Row="2" Spacing="8">
+                    <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+                    
+                    <!-- Theme Switcher Button in Sidebar -->
+                    <Button Command="{Binding ToggleThemeCommand}"
+                            HorizontalAlignment="Stretch" Padding="12,10"
+                            Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1" CornerRadius="8">
+                        <Grid ColumnDefinitions="24,*">
+                            <PathIcon Grid.Column="0" Data="{StaticResource IconSun}" IsVisible="{Binding IsDarkMode}" Foreground="{DynamicResource VantageAmberBrush}" Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <PathIcon Grid.Column="0" Data="{StaticResource IconMoon}" IsVisible="{Binding !IsDarkMode}" Foreground="{DynamicResource VantageAccentBrush}" Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding ThemeButtonText}" Foreground="{DynamicResource VantageTextBrush}" FontSize="12" FontWeight="SemiBold" Margin="8,0,0,0" VerticalAlignment="Center" />
+                        </Grid>
+                    </Button>
+
+                    <!-- Logout Button -->
+                    <Button Command="{Binding LogoutCommand}"
+                            HorizontalAlignment="Stretch" Padding="12,10"
+                            Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1" CornerRadius="8">
+                        <Grid ColumnDefinitions="24,*">
+                            <PathIcon Grid.Column="0" Data="{StaticResource IconLogout}" Foreground="{DynamicResource VantageTextMutedBrush}" Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="Keluar Akun" Foreground="{DynamicResource VantageTextMutedBrush}" FontSize="12" FontWeight="SemiBold" Margin="8,0,0,0" VerticalAlignment="Center" />
+                        </Grid>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- 2. RIGHT WORKSPACE AREA (Header Bar + Dynamic View)        -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <Grid Grid.Column="1" RowDefinitions="Auto,*">
+            <!-- Top Header & Offline Banner Stack -->
+            <StackPanel Grid.Row="0" Margin="28,10,28,0" IsVisible="{Binding IsAuthenticated}">
+                <!-- Top Header Bar -->
+                <Grid ColumnDefinitions="Auto,*,Auto" Height="60">
+                    <!-- Left: Title / Company Name & Cloud Status -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                        <TextBlock Text="PT Jaya Teknologi Solusi" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                        <Border Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1" CornerRadius="8" Padding="8,3" VerticalAlignment="Center">
+                            <TextBlock Text="JTS SUPPORT PANEL" FontSize="10" FontWeight="Bold" FontFamily="Consolas,Monospace" Foreground="{DynamicResource VantageAccentLightBrush}" />
+                        </Border>
+
+                        <!-- Live Cloud Connectivity Indicator -->
+                        <Border IsVisible="{Binding !IsOfflineMode}"
+                                Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1"
+                                CornerRadius="8" Padding="8,3" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource VantageGreenBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Cloud Terhubung" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                        <Border IsVisible="{Binding IsOfflineMode}"
+                                Background="{DynamicResource VantageAmberSubtleBrush}" BorderBrush="{DynamicResource VantageAmberBrush}" BorderThickness="1"
+                                CornerRadius="8" Padding="8,3" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource VantageAmberBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Mode Offline Lokal" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageAmberBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Right: Theme Switcher + Refresh Status Button + User Profile Badge -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                        <!-- Theme Toggle Button in Header -->
+                        <Button Command="{Binding ToggleThemeCommand}"
+                                Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="8" Padding="10,8" ToolTip.Tip="Beralih Mode Gelap / Terang">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconSun}" IsVisible="{Binding IsDarkMode}" Foreground="{DynamicResource VantageAmberBrush}" Width="13" Height="13" VerticalAlignment="Center" />
+                                <PathIcon Data="{StaticResource IconMoon}" IsVisible="{Binding !IsDarkMode}" Foreground="{DynamicResource VantageAccentBrush}" Width="13" Height="13" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ThemeButtonText}" Foreground="{DynamicResource VantageTextBrush}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Refresh Status Action Button -->
+                        <Button Command="{Binding CheckForUpdatesCommand}"
+                                IsEnabled="{Binding !IsCheckingUpdates}"
+                                Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="8" Padding="12,8" ToolTip.Tip="Sinkronisasi status perangkat &amp; garansi">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconRefresh}" IsVisible="{Binding !IsRefreshSuccess}" Foreground="{DynamicResource VantageAccentBrush}" Width="13" Height="13" VerticalAlignment="Center" />
+                                <PathIcon Data="{StaticResource IconCheck}" IsVisible="{Binding IsRefreshSuccess}" Foreground="{DynamicResource VantageGreenBrush}" Width="13" Height="13" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding RefreshButtonText}" Foreground="{DynamicResource VantageTextBrush}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Professional User Profile Pill Menu (Clickable to Edit Profile & WhatsApp) -->
+                        <Button Command="{Binding NavigateToTabCommand}" CommandParameter="Location"
+                                Background="{DynamicResource VantageCardBrush}"
+                                BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="18" Padding="5,4,12,4"
+                                ToolTip.Tip="Kelola Akun, WhatsApp &amp; Lokasi">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Panel Width="28" Height="28">
+                                    <!-- Fallback Avatar Initial -->
+                                    <Border Width="28" Height="28" Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="14"
+                                            IsVisible="{Binding UserAvatarBitmap, Converter={x:Static ObjectConverters.IsNull}}">
+                                        <TextBlock Text="{Binding UserInitial}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <!-- Actual Avatar Image -->
+                                    <Border Width="28" Height="28" CornerRadius="14" ClipToBounds="True"
+                                            IsVisible="{Binding UserAvatarBitmap, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                        <Image Source="{Binding UserAvatarBitmap}" Width="28" Height="28" Stretch="UniformToFill" />
+                                    </Border>
+                                </Panel>
+                                <TextBlock Text="{Binding CurrentUser.Name, FallbackValue='Pengguna'}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                                <PathIcon Data="{StaticResource IconChevronDown}" Width="9" Height="9" Foreground="{DynamicResource VantageTextMutedBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Offline Graceful Alert Banner -->
+                <Border IsVisible="{Binding IsOfflineMode}"
+                        Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="14,10" Margin="0,0,0,10">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <PathIcon Grid.Column="0" Data="{StaticResource IconAlert}" Foreground="{DynamicResource VantageAmberBrush}" Width="14" Height="14" Margin="0,0,10,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="Mode Offline: Server garansi sedang tidak terjangkau. Menampilkan data lokal perangkat (sinkronisasi tiket otomatis berjalan saat terhubung)."
+                                   FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <!-- Main Content Container -->
+            <ContentControl Grid.Row="1" Content="{Binding CurrentView}" />
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,615 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CustomerApp.ViewModels"
+             x:Class="CustomerApp.Views.ClaimView"
+             x:DataType="vm:ClaimViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border Padding="32,20,32,32" HorizontalAlignment="Stretch">
+            <StackPanel Spacing="18">
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- HEADER                                                     -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="Pusat Bantuan &amp; Layanan Servis" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                        <TextBlock Text="Ajukan perbaikan software jarak jauh atau servis hardware resmi langsung dari komputer Anda." FontSize="13" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                    </StackPanel>
+
+                    <!-- WhatsApp CS Button -->
+                    <Button Grid.Column="1" Command="{Binding ContactWhatsAppCommand}"
+                            Background="#065F46" BorderBrush="#10B981" BorderThickness="1"
+                            Foreground="White" Padding="14,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold"
+                            VerticalAlignment="Center" Cursor="Hand" ToolTip.Tip="Buka WhatsApp untuk berkonsultasi langsung dengan CS PT JTS">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <PathIcon Data="{StaticResource IconWhatsApp}" Width="14" Height="14" Foreground="White" VerticalAlignment="Center" />
+                            <TextBlock Text="Chat WhatsApp CS" FontWeight="Bold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- FORM VIEW (Visible when !IsRequestSubmitted)              -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <StackPanel Spacing="18" IsVisible="{Binding !IsRequestSubmitted}">
+
+                    <!-- 1. Channel Selector (Remote vs On-Site) -->
+                    <Grid ColumnDefinitions="*,*">
+                        <!-- Option 1: Remote Support -->
+                        <Button Grid.Column="0" Command="{Binding SelectNonPhysicalCommand}"
+                                Background="{DynamicResource VantageCardBrush}"
+                                BorderBrush="{Binding !IsPhysicalDamage, Converter={x:Static vm:ClaimConverters.SelectedCardBorder}}"
+                                BorderThickness="1.5" CornerRadius="12" Padding="20" Margin="0,0,8,0"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                MinHeight="148">
+                            <Grid RowDefinitions="Auto,*,Auto">
+                                <!-- Row 0: Header -->
+                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                                        <Border Width="40" Height="40" Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="8">
+                                            <PathIcon Data="{StaticResource IconMonitor}" Width="20" Height="20" Foreground="{DynamicResource VantageAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="Bantuan Remote (Software)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                            <TextBlock Text="SESI DIAGNOSA TERJADWAL" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageAccentLightBrush}" FontFamily="Consolas,Monospace" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Active Selection Badge -->
+                                    <Border Grid.Column="1" IsVisible="{Binding !IsPhysicalDamage}"
+                                            Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1"
+                                            CornerRadius="10" Padding="8,3" VerticalAlignment="Center">
+                                        <TextBlock Text="● DIPILIH" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageAccentLightBrush}" FontFamily="Consolas,Monospace" />
+                                    </Border>
+                                </Grid>
+
+                                <!-- Row 1: Description -->
+                                <TextBlock Grid.Row="1" Text="Driver error, blue screen, pengaturan OS, lambat, atau kendala aplikasi. Jadwal dikonfirmasi oleh teknisi resmi via RustDesk."
+                                           FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" LineHeight="18" Margin="0,12,0,12" VerticalAlignment="Top" />
+
+                                <!-- Row 2: Status Footer -->
+                                <Border Grid.Row="2" Background="{DynamicResource VantageBgBrush}" CornerRadius="6" Padding="8,4" HorizontalAlignment="Left" VerticalAlignment="Bottom" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource VantageGreenBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding NetworkLatencyText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Button>
+
+                        <!-- Option 2: On-Site Service -->
+                        <Button Grid.Column="1" Command="{Binding SelectPhysicalCommand}"
+                                Background="{DynamicResource VantageCardBrush}"
+                                BorderBrush="{Binding IsPhysicalDamage, Converter={x:Static vm:ClaimConverters.SelectedCardBorder}}"
+                                BorderThickness="1.5" CornerRadius="12" Padding="20" Margin="8,0,0,0"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                MinHeight="148">
+                            <Grid RowDefinitions="Auto,*,Auto">
+                                <!-- Row 0: Header -->
+                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                                        <Border Width="40" Height="40" Background="{DynamicResource VantageAmberSubtleBrush}" CornerRadius="8">
+                                            <PathIcon Data="{StaticResource IconService}" Width="20" Height="20" Foreground="{DynamicResource VantageAmberBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="Servis On-Site (Hardware)" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                            <TextBlock Text="TEKNISI DATANG KE LOKASI" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageAmberBrush}" FontFamily="Consolas,Monospace" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Active Selection Badge -->
+                                    <Border Grid.Column="1" IsVisible="{Binding IsPhysicalDamage}"
+                                            Background="{DynamicResource VantageAmberSubtleBrush}" BorderBrush="{DynamicResource VantageAmberBrush}" BorderThickness="1"
+                                            CornerRadius="10" Padding="8,3" VerticalAlignment="Center">
+                                        <TextBlock Text="● DIPILIH" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageAmberBrush}" FontFamily="Consolas,Monospace" />
+                                    </Border>
+                                </Grid>
+
+                                <!-- Row 1: Description -->
+                                <TextBlock Grid.Row="1" Text="Layar pecah, keyboard/touchpad rusak, engsel patah, motherboard, atau mati total. Lokasi rumah terlampir otomatis."
+                                           FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" LineHeight="18" Margin="0,12,0,12" VerticalAlignment="Top" />
+
+                                <!-- Row 2: Status Footer -->
+                                <Border Grid.Row="2" Background="{DynamicResource VantageBgBrush}" CornerRadius="6" Padding="8,4" HorizontalAlignment="Left" VerticalAlignment="Bottom" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <PathIcon Data="{StaticResource IconLocation}" Width="10" Height="10" Foreground="{DynamicResource VantageAmberBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="Kunjungan Langsung Teknisi Resmi" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource VantageAmberBrush}" FontFamily="Consolas,Monospace" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Button>
+                    </Grid>
+
+                    <!-- 2. Remote Scheduling Selector (Only for Remote Requests) -->
+                    <Border IsVisible="{Binding !IsPhysicalDamage}"
+                            Background="{DynamicResource VantageCardBrush}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="14">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <PathIcon Data="{StaticResource IconCalendar}" Width="18" Height="18" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Pilih Preferensi Waktu Bantuan Remote" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Pilih perkiraan waktu luang Anda. Permintaan akan ditinjau oleh teknisi dan dijadwalkan secara resmi sebelum sesi dimulai."
+                                       FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" />
+
+                            <Grid ColumnDefinitions="*,*" Margin="0,6,0,0">
+                                <StackPanel Grid.Column="0" Margin="0,0,10,0" Spacing="6">
+                                    <TextBlock Text="Slot Waktu yang Diinginkan" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                    <ComboBox ItemsSource="{Binding AvailableScheduleSlots}"
+                                              SelectedItem="{Binding SelectedScheduleSlot}"
+                                              HorizontalAlignment="Stretch"
+                                              Background="{DynamicResource VantageBgBrush}"
+                                              Foreground="White"
+                                              BorderBrush="{DynamicResource VantageBorderBrush}"
+                                              CornerRadius="8"
+                                              FontSize="13"
+                                              Padding="12,10" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="6">
+                                    <TextBlock Text="Catatan Tambahan Jadwal (Opsional)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                    <TextBox Text="{Binding ScheduleNotes, Mode=TwoWay}"
+                                             Watermark="Contoh: Tolong hubungi WhatsApp sebelum koneksi..."
+                                             Background="{DynamicResource VantageBgBrush}"
+                                             Foreground="White"
+                                             BorderBrush="{DynamicResource VantageBorderBrush}"
+                                             FontSize="13"
+                                             Padding="12,10"
+                                             CornerRadius="8" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 3. Problem Description Card -->
+                    <Border Background="{DynamicResource VantageCardBrush}" CornerRadius="12" Padding="20" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="16">
+                            <StackPanel Spacing="4">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Text="Jelaskan Gejala Kerusakan" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    <!-- Character Counter -->
+                                    <TextBlock Grid.Column="1" Text="{Binding DescriptionLengthText}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentLightBrush}" FontFamily="Consolas,Monospace" />
+                                </Grid>
+                                <TextBlock Text="Ceritakan kronologi atau pesan error yang muncul di perangkat Anda" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Description, Mode=TwoWay}"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         Height="90"
+                                         MaxLength="500"
+                                         FontSize="13"
+                                         Margin="0,6,0,0"
+                                         Watermark="Contoh: Laptop sering tiba-tiba blue screen dan restart saat membuka aplikasi tertentu..." />
+                            </StackPanel>
+
+                            <!-- Quick Template Tags -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Contoh Cepat (Klik untuk memilih):" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                <WrapPanel Orientation="Horizontal">
+                                    <Button Command="{Binding SelectTemplateCommand}" CommandParameter="Layar berkedip dan muncul garis saat digunakan"
+                                            Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                            CornerRadius="14" Padding="10,6" Margin="0,0,8,8" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon Data="{StaticResource IconMonitor}" Width="12" Height="12" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Text="Layar Berkedip" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding SelectTemplateCommand}" CommandParameter="Suara audio / speaker pecah dan tidak keluar bunyi"
+                                            Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                            CornerRadius="14" Padding="10,6" Margin="0,0,8,8" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon Data="{StaticResource IconAlert}" Width="12" Height="12" Foreground="{DynamicResource VantageAmberBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Text="Audio Bermasalah" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding SelectTemplateCommand}" CommandParameter="Sistem sering mengalami Blue Screen (BSOD) secara tiba-tiba"
+                                            Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                            CornerRadius="14" Padding="10,6" Margin="0,0,8,8" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon Data="{StaticResource IconAlert}" Width="12" Height="12" Foreground="{DynamicResource VantageFaultBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Text="Blue Screen / BSOD" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding SelectTemplateCommand}" CommandParameter="Unit mati total dan lampu indikator charger tidak menyala"
+                                            Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                            CornerRadius="14" Padding="10,6" Margin="0,0,8,8" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon Data="{StaticResource IconBolt}" Width="12" Height="12" Foreground="{DynamicResource VantageAmberBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Text="Mati Total" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </WrapPanel>
+                            </StackPanel>
+
+                            <!-- Feedback Alerts -->
+                            <Border IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                    Background="{DynamicResource VantageFaultSubtleBrush}" BorderBrush="{DynamicResource VantageFaultBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+                                <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource VantageFaultBrush}" FontSize="12" TextWrapping="Wrap" />
+                            </Border>
+
+                            <!-- Submit Button -->
+                            <Button Command="{Binding SubmitClaimCommand}"
+                                    IsEnabled="{Binding !IsLoading}"
+                                    Background="{DynamicResource VantageAccentBrush}" Foreground="White"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                    Padding="14" CornerRadius="8" FontWeight="Bold" FontSize="14">
+                                <TextBlock Text="{Binding IsLoading, Converter={x:Static vm:ClaimConverters.ButtonStateTitle}}" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- STATUS DASHBOARD (Visible when IsRequestSubmitted)         -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <StackPanel Spacing="18" IsVisible="{Binding IsRequestSubmitted}">
+
+                    <!-- Status Hero Banner -->
+                    <!-- 1. State: Waiting for Technician Scheduling (Amber) -->
+                    <Border IsVisible="{Binding IsRemoteWaitingAcceptance}"
+                            Background="{DynamicResource VantageAmberSubtleBrush}" BorderBrush="{DynamicResource VantageAmberBrush}" BorderThickness="1.5" CornerRadius="12" Padding="20">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Border Grid.Column="0" Width="46" Height="46" Background="#4A3419" CornerRadius="10" Margin="0,0,16,0">
+                                <PathIcon Data="{StaticResource IconHourglass}" Width="22" Height="22" Foreground="{DynamicResource VantageAmberBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="MENUNGGU PENINJAUAN &amp; PENJADWALAN TEKNISI" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageAmberBrush}" FontFamily="Consolas,Monospace" />
+                                <TextBlock Text="Permintaan bantuan remote Anda telah masuk ke antrean servis resmi. Teknisi akan meninjau kendala dan mengonfirmasi ketersediaan jadwal."
+                                           FontSize="12" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" LineHeight="18" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- 2. State: Scheduled / Accepted (Green) -->
+                    <Border IsVisible="{Binding IsRemoteScheduled}"
+                            Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1.5" CornerRadius="12" Padding="20">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Border Grid.Column="0" Width="46" Height="46" Background="#1D4A32" CornerRadius="10" Margin="0,0,16,0">
+                                <PathIcon Data="{StaticResource IconCheckCircle}" Width="22" Height="22" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="JADWAL SESI REMOTE RESMI TELAH DIKONFIRMASI!" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                                <TextBlock Text="Teknisi resmi telah menyetujui permintaan Anda. Sesi remote diagnostik siap dimulai sesuai jadwal yang telah disepakati."
+                                           FontSize="12" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" LineHeight="18" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- 3. State: On-Site Hardware Service -->
+                    <Border IsVisible="{Binding IsPhysicalDamage}"
+                            Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1.5" CornerRadius="12" Padding="20">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Border Grid.Column="0" Width="46" Height="46" Background="#183E48" CornerRadius="10" Margin="0,0,16,0">
+                                <PathIcon Data="{StaticResource IconLocation}" Width="22" Height="22" Foreground="{DynamicResource VantageAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="PERMINTAAN SERVIS ON-SITE BERHASIL DIDAFTARKAN" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" FontFamily="Consolas,Monospace" />
+                                <TextBlock Text="Tiket kunjungan telah diteruskan ke tim servis. Teknisi lapangan resmi akan menghubungi Anda sebelum berkunjung ke alamat rumah."
+                                           FontSize="12" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" LineHeight="18" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- ══════════════════════════════════════════════════════════ -->
+                    <!-- PROGRESS STEPPER BAR (Linimasa Tahapan Alur)              -->
+                    <!-- ══════════════════════════════════════════════════════════ -->
+                    <Border Background="{DynamicResource VantageCardBrush}" CornerRadius="12" Padding="24,18" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="16">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Linimasa Tahapan Penanganan" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                <TextBlock Text="Status Progres Alur Kerja" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                            </Grid>
+
+                            <!-- Horizontal Stepper Row -->
+                            <Grid ColumnDefinitions="*,Auto,*,Auto,*,Auto,*">
+                                <!-- Step 1: Submission (Always Completed) -->
+                                <StackPanel Grid.Column="0" Spacing="6" HorizontalAlignment="Center">
+                                    <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1.5" HorizontalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconCheck}" Width="16" Height="16" Foreground="{DynamicResource VantageAccentHoverBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="1. Pengajuan" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" />
+                                    <Border Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
+                                        <TextBlock Text="SELESAI" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageAccentHoverBrush}" />
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Line 1-2 -->
+                                <Border Grid.Column="1" Width="44" Height="2" Background="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" Margin="0,-16,0,0" />
+
+                                <!-- Step 2: Review / Allocation -->
+                                <StackPanel Grid.Column="2" Spacing="6" HorizontalAlignment="Center">
+                                    <!-- Waiting acceptance: Amber -->
+                                    <Border IsVisible="{Binding IsRemoteWaitingAcceptance}"
+                                            Width="36" Height="36" CornerRadius="18" Background="{DynamicResource VantageAmberSubtleBrush}" BorderBrush="{DynamicResource VantageAmberBrush}" BorderThickness="2" HorizontalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconHourglass}" Width="16" Height="16" Foreground="{DynamicResource VantageAmberBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <!-- Scheduled: Blue check -->
+                                    <Border IsVisible="{Binding !IsRemoteWaitingAcceptance}"
+                                            Width="36" Height="36" CornerRadius="18" Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1.5" HorizontalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconCheck}" Width="16" Height="16" Foreground="{DynamicResource VantageAccentHoverBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+
+                                    <TextBlock Text="2. Peninjauan" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" />
+
+                                    <Panel HorizontalAlignment="Center">
+                                        <Border IsVisible="{Binding IsRemoteWaitingAcceptance}"
+                                                Background="{DynamicResource VantageAmberSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                            <TextBlock Text="DITINJAU" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageAmberBrush}" />
+                                        </Border>
+                                        <Border IsVisible="{Binding !IsRemoteWaitingAcceptance}"
+                                                Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                            <TextBlock Text="TERALOKASI" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageAccentHoverBrush}" />
+                                        </Border>
+                                    </Panel>
+                                </StackPanel>
+
+                                <!-- Line 2-3 -->
+                                <Border Grid.Column="3" Width="44" Height="2"
+                                        Background="{Binding IsRemoteScheduled, Converter={x:Static vm:ClaimConverters.ConnectButtonBg}}"
+                                        VerticalAlignment="Center" Margin="0,-16,0,0" />
+
+                                <!-- Step 3: Scheduling Confirmation -->
+                                <StackPanel Grid.Column="4" Spacing="6" HorizontalAlignment="Center">
+                                    <Border IsVisible="{Binding IsRemoteScheduled}"
+                                            Width="36" Height="36" CornerRadius="18" Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1.5" HorizontalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconCalendar}" Width="16" Height="16" Foreground="{DynamicResource VantageAccentHoverBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <Border IsVisible="{Binding !IsRemoteScheduled}"
+                                            Width="36" Height="36" CornerRadius="18" Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" HorizontalAlignment="Center">
+                                        <TextBlock Text="3" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+
+                                    <TextBlock Text="3. Penjadwalan" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" />
+
+                                    <Panel HorizontalAlignment="Center">
+                                        <Border IsVisible="{Binding IsRemoteScheduled}"
+                                                Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                            <TextBlock Text="DISETUJUI" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageAccentHoverBrush}" />
+                                        </Border>
+                                        <Border IsVisible="{Binding !IsRemoteScheduled}"
+                                                Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                            <TextBlock Text="MENUNGGU" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                        </Border>
+                                    </Panel>
+                                </StackPanel>
+
+                                <!-- Line 3-4 -->
+                                <Border Grid.Column="5" Width="44" Height="2"
+                                        Background="{Binding IsRemoteScheduled, Converter={x:Static vm:ClaimConverters.ConnectButtonBg}}"
+                                        VerticalAlignment="Center" Margin="0,-16,0,0" />
+
+                                <!-- Step 4: Remote Session (RustDesk) -->
+                                <StackPanel Grid.Column="6" Spacing="6" HorizontalAlignment="Center">
+                                    <Border IsVisible="{Binding IsRemoteScheduled}"
+                                            Width="36" Height="36" CornerRadius="18" Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1.5" HorizontalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconMonitor}" Width="16" Height="16" Foreground="{DynamicResource VantageAccentHoverBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <Border IsVisible="{Binding !IsRemoteScheduled}"
+                                            Width="36" Height="36" CornerRadius="18" Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" HorizontalAlignment="Center">
+                                        <TextBlock Text="4" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+
+                                    <TextBlock Text="4. Sesi Remote" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" />
+
+                                    <Panel HorizontalAlignment="Center">
+                                        <Border IsVisible="{Binding IsRemoteScheduled}"
+                                                Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                            <TextBlock Text="SIAP MULAI" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageAccentHoverBrush}" />
+                                        </Border>
+                                        <Border IsVisible="{Binding !IsRemoteScheduled}"
+                                                Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                            <TextBlock Text="TERKUNCI" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                        </Border>
+                                    </Panel>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ══════════════════════════════════════════════════════════ -->
+                    <!-- DETAILED LINIMASA LOG & CATATAN TEKNISI                   -->
+                    <!-- ══════════════════════════════════════════════════════════ -->
+                    <Border Background="{DynamicResource VantageCardBrush}" CornerRadius="12" Padding="22" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="16">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="3">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconHistory}" Width="16" Height="16" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="Linimasa Detail Progres &amp; Log Peninjauan" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Text="Pantau tahapan verifikasi, penelaahan keluhan, dan penetapan jadwal resmi secara transparan" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,5" VerticalAlignment="Center">
+                                    <TextBlock Text="STATUS REAL-TIME" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" FontFamily="Consolas,Monospace" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Timeline Items List -->
+                            <ItemsControl ItemsSource="{Binding TimelineSteps}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ClaimTimelineItem">
+                                        <Grid ColumnDefinitions="36,*" Margin="0,0,0,12">
+                                            <!-- Node indicator + Connector column -->
+                                            <Grid Grid.Column="0" RowDefinitions="Auto,*">
+                                                <Border Width="28" Height="28" CornerRadius="14"
+                                                        Background="{Binding BackgroundColorHex}"
+                                                        BorderBrush="{Binding BorderColorHex}"
+                                                        BorderThickness="1.5"
+                                                        HorizontalAlignment="Center">
+                                                    <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <PathIcon IsVisible="{Binding IsCompleted}" Data="{StaticResource IconCheck}" Width="12" Height="12" Foreground="{Binding TextColorHex}" />
+                                                        <PathIcon IsVisible="{Binding IsActive}" Data="{StaticResource IconHourglass}" Width="12" Height="12" Foreground="{Binding TextColorHex}" />
+                                                        <TextBlock IsVisible="{Binding IsPending}" Text="{Binding StepNumber}" FontSize="11" FontWeight="Bold" Foreground="{Binding TextColorHex}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Panel>
+                                                </Border>
+                                                <Border Grid.Row="1" Width="2" Background="{DynamicResource VantageBorderBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" MinHeight="28" />
+                                            </Grid>
+
+                                            <!-- Content Card -->
+                                            <Border Grid.Column="1" Background="{DynamicResource VantageBgBrush}" BorderBrush="{Binding BorderColorHex}" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="12,0,0,0">
+                                                <StackPanel Spacing="5">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                                        <Border Grid.Column="1" Background="{Binding BadgeBgHex}" CornerRadius="4" Padding="8,3">
+                                                            <TextBlock Text="{Binding BadgeText}" FontSize="9" FontWeight="Bold" Foreground="{Binding TextColorHex}" FontFamily="Consolas,Monospace" />
+                                                        </Border>
+                                                    </Grid>
+                                                    <TextBlock Text="{Binding Subtitle}" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" LineHeight="17" />
+                                                    <TextBlock Text="{Binding Timestamp, StringFormat='Log Waktu: {0}'}" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" FontFamily="Consolas,Monospace" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Ticket Details Card -->
+                    <Border Background="{DynamicResource VantageCardBrush}" CornerRadius="12" Padding="22" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="Informasi Tiket &amp; Status Penjadwalan" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="180,*">
+                                <!-- Ticket ID -->
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Nomor Tiket" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,0,12" />
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="0,0,0,12">
+                                    <TextBlock Text="{Binding SubmittedRequest.Id, StringFormat='#REQ-{0:D4}'}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" FontFamily="Consolas,Monospace" />
+                                    <Border Background="{DynamicResource VantageBgBrush}" CornerRadius="4" Padding="8,3" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                                        <TextBlock Text="{Binding RequestStatusBadge}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Damage Description -->
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Keluhan / Gejala" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,0,12" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Description}" FontSize="13" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" Margin="0,0,0,12" />
+
+                                <!-- Schedule Slot -->
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Preferensi Jadwal" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,0,12" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedScheduleSlot}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" Margin="0,0,0,12" />
+
+                                <!-- Assigned Technician & Status -->
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Teknisi &amp; Jadwal Resmi" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <StackPanel Grid.Row="3" Grid.Column="1" Spacing="3">
+                                    <TextBlock Text="{Binding AssignedTechnicianName}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                    <TextBlock Text="{Binding ScheduledAtText}" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- RustDesk Remote Session Box (For Remote Channel Only) -->
+                    <Border IsVisible="{Binding !IsPhysicalDamage}"
+                            Background="{DynamicResource VantageCardBrush}" CornerRadius="12" Padding="22" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                        <StackPanel Spacing="16">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <PathIcon Data="{StaticResource IconMonitor}" Width="18" Height="18" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Sesi Bantuan Remote (RustDesk)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="6">
+                                    <TextBlock Text="RustDesk Session ID Anda:" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                    <TextBlock Text="{Binding RustdeskSessionId}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" FontFamily="Consolas,Monospace" />
+                                    <TextBlock Text="ID ini akan digunakan teknisi resmi untuk meminta akses kendali jarak jauh pada waktu yang dijadwalkan."
+                                               FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <Button Grid.Column="1" Command="{Binding ConnectRustDeskCommand}"
+                                        IsEnabled="{Binding CanConnectRustDesk}"
+                                        Background="{Binding CanConnectRustDesk, Converter={x:Static vm:ClaimConverters.ConnectButtonBg}}"
+                                        Foreground="White"
+                                        Padding="18,12" CornerRadius="8" VerticalAlignment="Center" FontWeight="Bold" FontSize="13">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconMonitor}" Width="16" Height="16" />
+                                        <TextBlock Text="Buka RustDesk" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <!-- Lock / Ready note -->
+                            <Border Background="{DynamicResource VantageBgBrush}" CornerRadius="8" Padding="14" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                                <Panel>
+                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsRemoteWaitingAcceptance}">
+                                        <PathIcon Data="{StaticResource IconLock}" Width="14" Height="14" Foreground="{DynamicResource VantageAmberBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="Tombol 'Buka RustDesk' dinonaktifkan sementara. Tombol akan aktif secara otomatis begitu teknisi mengonfirmasi jadwal sesi."
+                                                   FontSize="12" Foreground="{DynamicResource VantageAmberBrush}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsRemoteScheduled}">
+                                        <PathIcon Data="{StaticResource IconCheckCircle}" Width="14" Height="14" Foreground="{DynamicResource VantageAccentLightBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="Jadwal telah disetujui! Anda dapat mengklik tombol 'Buka RustDesk' sekarang untuk mempersiapkan sesi jarak jauh."
+                                                   FontSize="12" Foreground="{DynamicResource VantageAccentLightBrush}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Panel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Interactive Demonstration Box (For Evaluators & Testing) -->
+                    <Border IsVisible="{Binding !IsPhysicalDamage}"
+                            Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
+                        <StackPanel Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <PathIcon Data="{StaticResource IconBolt}" Width="14" Height="14" Foreground="{DynamicResource VantageAmberBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="Simulasi Respons Teknisi (Mode Demo Pengujian)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Untuk memudahkan Anda mengevaluasi perubahan alur tanpa harus beralih ke portal teknisi terpisah, klik tombol di bawah untuk menyimulasikan konfirmasi jadwal oleh teknisi secara live:"
+                                       FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" />
+
+                            <Button Command="{Binding SimulateTechnicianAcceptCommand}"
+                                    IsEnabled="{Binding !IsSimulating}"
+                                    Background="{DynamicResource VantageBgBrush}"
+                                    BorderBrush="{DynamicResource VantageAccentBrush}"
+                                    BorderThickness="1"
+                                    Foreground="{DynamicResource VantageAccentLightBrush}"
+                                    HorizontalAlignment="Left"
+                                    Padding="16,10" CornerRadius="8" FontWeight="SemiBold" FontSize="12">
+                                <TextBlock Text="{Binding IsSimulating, Converter={x:Static vm:ClaimConverters.SimulationButtonTitle}}" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Simulation / Status Check Feedback Alert -->
+                    <Border IsVisible="{Binding SimulationFeedbackMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                            Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+                        <TextBlock Text="{Binding SimulationFeedbackMessage}" Foreground="{DynamicResource VantageTextBrush}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    </Border>
+
+                    <!-- Bottom Actions -->
+                    <Grid ColumnDefinitions="*,*,*">
+                        <Button Grid.Column="0" Command="{Binding CheckScheduleStatusCommand}"
+                                IsEnabled="{Binding !IsCheckingStatus}"
+                                Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                Foreground="White" Margin="0,0,6,0" Padding="12,10" CornerRadius="8"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="12">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconRefresh}" Width="13" Height="13" Foreground="{DynamicResource VantageAccentLightBrush}" />
+                                <TextBlock Text="Cek Status Live" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Grid.Column="1" Command="{Binding ContactWhatsAppCommand}"
+                                Background="#065F46" BorderBrush="#10B981" BorderThickness="1"
+                                Foreground="White" Margin="3,0,3,0" Padding="12,10" CornerRadius="8"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="12"
+                                ToolTip.Tip="Kirim detail tiket ini langsung ke WhatsApp CS PT JTS">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconWhatsApp}" Width="13" Height="13" Foreground="White" VerticalAlignment="Center" />
+                                <TextBlock Text="WhatsApp CS" FontWeight="Bold" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Grid.Column="2" Command="{Binding ResetFormCommand}"
+                                Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                Foreground="{DynamicResource VantageTextMutedBrush}" Margin="6,0,0,0" Padding="12,10" CornerRadius="8"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="12">
+                            <TextBlock Text="Buat Tiket Baru" />
+                        </Button>
+                    </Grid>
+                </StackPanel>
+
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>

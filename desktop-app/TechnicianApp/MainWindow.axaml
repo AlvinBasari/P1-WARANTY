@@ -1,0 +1,120 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TechnicianApp.ViewModels"
+        xmlns:views="using:TechnicianApp.Views"
+        x:Class="TechnicianApp.MainWindow"
+        x:DataType="vm:TechnicianMainViewModel"
+        Title="PT JTS - Enterprise Technician Workbench"
+        Width="1120" Height="740"
+        MinWidth="920" MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource VantageBgBrush}">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Top App Bar (Header) -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource VantageSidebarBrush}"
+                BorderBrush="{DynamicResource VantageBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="20,12">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Brand Title -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource VantageAccentBrush}">
+                        <PathIcon Data="{DynamicResource IconService}" Width="18" Height="18" Foreground="White"/>
+                    </Border>
+                    <StackPanel Spacing="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="PT JTS" FontSize="13" FontWeight="Black" Foreground="{DynamicResource VantageAccentLightBrush}"/>
+                            <TextBlock Text="•" FontSize="13" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+                            <TextBlock Text="TECHNICIAN WORKBENCH" FontSize="13" FontWeight="Black" LetterSpacing="0.8" Foreground="{DynamicResource VantageTextBrush}"/>
+                        </StackPanel>
+                        <TextBlock Text="Sistem Manajemen Servis, Remote Assistance, &amp; Workshop" FontSize="10" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Right Action Controls (Theme, Server Status, User Profile, Logout) -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <!-- Server Status Indicator -->
+                    <Border Background="{DynamicResource VantageCardSubtleBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10,6">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse Width="8" Height="8" Fill="{DynamicResource VantageGreenBrush}"/>
+                            <TextBlock Text="{Binding ServerStatusText}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Theme Toggle Button -->
+                    <Button Command="{Binding ToggleThemeCommand}"
+                            Background="{DynamicResource VantageCardSubtleBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="8,6"
+                            ToolTip.Tip="Beralih Tema Gelap / Terang">
+                        <Panel>
+                            <PathIcon Data="{DynamicResource IconSun}" IsVisible="{Binding IsDarkMode}" Width="14" Height="14" Foreground="{DynamicResource VantageAmberBrush}"/>
+                            <PathIcon Data="{DynamicResource IconMoon}" IsVisible="{Binding !IsDarkMode}" Width="14" Height="14" Foreground="{DynamicResource VantageAccentLightBrush}"/>
+                        </Panel>
+                    </Button>
+
+                    <!-- Active User Badge (If Authenticated) -->
+                    <Border IsVisible="{Binding IsAuthenticated}"
+                            Background="{DynamicResource VantageCardSubtleBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10,4">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="26" Height="26" CornerRadius="13" Background="{DynamicResource VantageAccentSubtleBrush}">
+                                <PathIcon Data="{DynamicResource IconUser}" Width="13" Height="13" Foreground="{DynamicResource VantageAccentLightBrush}"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center" Spacing="0">
+                                <TextBlock Text="{Binding TechnicianName}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}"/>
+                                <TextBlock Text="{Binding TechnicianRole}" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextSubtleBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Logout Button (If Authenticated) -->
+                    <Button IsVisible="{Binding IsAuthenticated}"
+                            Command="{Binding LogoutCommand}"
+                            Background="{DynamicResource VantageFaultSubtleBrush}"
+                            BorderBrush="{DynamicResource VantageFaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="8,6"
+                            ToolTip.Tip="Keluar / Logout">
+                        <PathIcon Data="{DynamicResource IconLogout}" Width="14" Height="14" Foreground="{DynamicResource VantageFaultBrush}"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Dynamic Content -->
+        <Grid Grid.Row="1">
+            <!-- Auth View -->
+            <ContentControl Content="{Binding AuthViewModel}" IsVisible="{Binding IsAuthPage}"/>
+
+            <!-- Queue Dashboard View -->
+            <ContentControl Content="{Binding QueueViewModel}" IsVisible="{Binding IsQueuePage}"/>
+
+            <!-- Ticket Detail View -->
+            <ContentControl Content="{Binding DetailViewModel}" IsVisible="{Binding IsDetailPage}"/>
+
+            <!-- Modal Overlays -->
+            <!-- Workshop Tracking Stepper Modal -->
+            <Panel IsVisible="{Binding IsTrackingDialogOpen}">
+                <views:TrackingDialog DataContext="{Binding TrackingDialogViewModel}"/>
+            </Panel>
+
+            <!-- Invoice Management Modal -->
+            <Panel IsVisible="{Binding IsInvoiceDialogOpen}">
+                <views:InvoiceDialog DataContext="{Binding InvoiceDialogViewModel}"/>
+            </Panel>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,277 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TechnicianApp.ViewModels"
+             xmlns:m="using:SharedCore.Models"
+             x:Class="TechnicianApp.Views.QueueView"
+             x:DataType="vm:TicketQueueViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,*" Margin="24,20,24,24" Background="{DynamicResource VantageBgBrush}">
+        <!-- Row 0: Work Summary Metrics Bar -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*,*" Margin="0,0,0,20">
+            <!-- Card 1: Total -->
+            <Border Grid.Column="0" Margin="0,0,8,0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="TOTAL ANTREAN" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" LetterSpacing="0.8"/>
+                    <TextBlock Text="{Binding TotalCount}" FontSize="20" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Card 2: Remote -->
+            <Border Grid.Column="1" Margin="4,0,8,0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="REMOTE ASSIST" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageAccentLightBrush}" LetterSpacing="0.8"/>
+                    <TextBlock Text="{Binding RemoteCount}" FontSize="20" FontWeight="Black" Foreground="{DynamicResource VantageAccentLightBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Card 3: On-Site -->
+            <Border Grid.Column="2" Margin="4,0,8,0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="SERVIS ON-SITE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageAmberBrush}" LetterSpacing="0.8"/>
+                    <TextBlock Text="{Binding OnSiteCount}" FontSize="20" FontWeight="Black" Foreground="{DynamicResource VantageAmberBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Card 4: Workshop -->
+            <Border Grid.Column="3" Margin="4,0,8,0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="WORKSHOP SC" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}" LetterSpacing="0.8"/>
+                    <TextBlock Text="{Binding WorkshopCount}" FontSize="20" FontWeight="Black" Foreground="{DynamicResource VantageTextBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Card 5: Completed -->
+            <Border Grid.Column="4" Margin="4,0,0,0" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="SELESAI" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" LetterSpacing="0.8"/>
+                    <TextBlock Text="{Binding CompletedCount}" FontSize="20" FontWeight="Black" Foreground="{DynamicResource VantageGreenBrush}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Row 1: Filter & Search Bar -->
+        <Border Grid.Row="1" Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,16">
+            <Grid RowDefinitions="Auto,Auto">
+                <!-- Search & Actions -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,10">
+                    <!-- Search Input -->
+                    <TextBox Grid.Column="0"
+                             Text="{Binding SearchKeyword, Mode=TwoWay}"
+                             Watermark="Cari nama klien, model perangkat, nomor seri, atau deskripsi keluhan..."
+                             FontSize="13"
+                             Padding="12,9"
+                             Margin="0,0,12,0"/>
+
+                    <!-- Refresh Button -->
+                    <Button Grid.Column="1"
+                            Command="{Binding LoadTicketsCommand}"
+                            Background="{DynamicResource VantageCardSubtleBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            Foreground="{DynamicResource VantageTextBrush}"
+                            Padding="12,9"
+                            Margin="0,0,8,0"
+                            ToolTip.Tip="Segarkan Antrean Tiket">
+                        <Grid ColumnDefinitions="Auto,Auto">
+                            <PathIcon Grid.Column="0" Data="{DynamicResource IconRefresh}" Width="13" Height="13" Foreground="{DynamicResource VantageTextMutedBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="Segarkan" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                </Grid>
+
+                <!-- Category Tabs -->
+                <WrapPanel Grid.Row="1">
+                    <Button Command="{Binding SelectTabCommand}" CommandParameter="all"
+                            Classes.category-tab="True"
+                            Classes.active="{Binding IsTabAll}">
+                        <TextBlock Text="Semua Antrean"/>
+                    </Button>
+
+                    <Button Command="{Binding SelectTabCommand}" CommandParameter="remote"
+                            Classes.category-tab="True"
+                            Classes.active="{Binding IsTabRemote}">
+                        <TextBlock Text="Bantuan Remote"/>
+                    </Button>
+
+                    <Button Command="{Binding SelectTabCommand}" CommandParameter="onsite"
+                            Classes.category-tab="True"
+                            Classes.active="{Binding IsTabOnSite}">
+                        <TextBlock Text="Servis On-Site"/>
+                    </Button>
+
+                    <Button Command="{Binding SelectTabCommand}" CommandParameter="workshop"
+                            Classes.category-tab="True"
+                            Classes.active="{Binding IsTabWorkshop}">
+                        <TextBlock Text="Workshop / SC"/>
+                    </Button>
+
+                    <Button Command="{Binding SelectTabCommand}" CommandParameter="completed"
+                            Classes.category-tab="True"
+                            Classes.active="{Binding IsTabCompleted}">
+                        <TextBlock Text="Selesai"/>
+                    </Button>
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+        <!-- Row 2: Ticket List -->
+        <Grid Grid.Row="2">
+            <!-- Loading Indicator -->
+            <ProgressBar IsIndeterminate="True"
+                         IsVisible="{Binding IsLoading}"
+                         Height="3"
+                         VerticalAlignment="Top"
+                         Foreground="{DynamicResource VantageAccentBrush}"/>
+
+            <!-- Empty State -->
+            <Border IsVisible="{Binding !FilteredTickets.Count}"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Background="{DynamicResource VantageCardBrush}"
+                    BorderBrush="{DynamicResource VantageBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="32,24"
+                    MaxWidth="400">
+                <StackPanel Spacing="10" HorizontalAlignment="Center">
+                    <PathIcon Data="{DynamicResource IconInfo}" Width="32" Height="32" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Tidak Ada Tiket Ditemukan" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Tidak ada antrean tiket yang cocok dengan kriteria pencarian atau filter yang dipilih." FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" TextAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Scrollable Cards -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding FilteredTickets}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="m:RepairRequestDto">
+                            <Border Classes="vantage-card"
+                                    Background="{DynamicResource VantageCardBrush}"
+                                    BorderBrush="{DynamicResource VantageBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Padding="16"
+                                    Margin="0,0,0,12">
+                                <Grid RowDefinitions="Auto,Auto,Auto">
+                                    <!-- Header Row: ID, Badges, Date -->
+                                    <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="0,0,0,12">
+                                        <!-- Ticket ID -->
+                                        <Border Grid.Column="0" Background="{DynamicResource VantageCardSubtleBrush}" CornerRadius="6" Padding="8,3" Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding Id, StringFormat='TIKET #{0}'}" FontSize="11" FontWeight="Bold" FontFamily="Consolas,Monospace" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+                                        </Border>
+
+                                        <!-- Damage Category Badge -->
+                                        <Border Grid.Column="1"
+                                                Background="{Binding DamageCategory, Converter={StaticResource DamageCategoryBadgeBgConverter}}"
+                                                CornerRadius="6" Padding="8,3" Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding DamageCategory, Converter={StaticResource DamageCategoryTextConverter}}"
+                                                       FontSize="11" FontWeight="Bold"
+                                                       Foreground="{Binding DamageCategory, Converter={StaticResource DamageCategoryBadgeFgConverter}}"/>
+                                        </Border>
+
+                                        <!-- Status Badge -->
+                                        <Border Grid.Column="2"
+                                                Background="{Binding Status, Converter={StaticResource StatusBadgeBgConverter}}"
+                                                CornerRadius="6" Padding="8,3" Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding Status, Converter={StaticResource StatusTextConverter}}"
+                                                       FontSize="11" FontWeight="Bold"
+                                                       Foreground="{Binding Status, Converter={StaticResource StatusBadgeFgConverter}}"/>
+                                        </Border>
+
+                                        <!-- Created At -->
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <PathIcon Data="{DynamicResource IconClock}" Width="11" Height="11" Foreground="{DynamicResource VantageTextSubtleBrush}"/>
+                                            <TextBlock Text="{Binding CreatedAt}" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Content Row -->
+                                    <Grid Grid.Row="1" ColumnDefinitions="280,*,240" Margin="0,0,0,12">
+                                        <!-- Col 1: Customer & Device -->
+                                        <StackPanel Grid.Column="0" Spacing="6" Margin="0,0,16,0">
+                                            <TextBlock Text="PELANGGAN &amp; PERANGKAT" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" LetterSpacing="0.8"/>
+                                            <TextBlock Text="{Binding User.Name, FallbackValue='Pelanggan'}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}"/>
+                                            
+                                            <TextBlock Text="{Binding Device.Model, FallbackValue='Model Laptop'}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageAccentLightBrush}"/>
+                                            <TextBlock Text="{Binding Device.SerialNumber, StringFormat='SN: {0}', FallbackValue='SN: -'}" FontSize="11" FontFamily="Consolas,Monospace" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+                                        </StackPanel>
+
+                                        <!-- Col 2: Issue & Description -->
+                                        <StackPanel Grid.Column="1" Spacing="6" Margin="0,0,16,0">
+                                            <TextBlock Text="DESKRIPSI KENDALA" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource VantageTextSubtleBrush}" LetterSpacing="0.8"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis"/>
+
+                                            <!-- Schedule / Location info if present -->
+                                            <Border Background="{DynamicResource VantageCardSubtleBrush}" CornerRadius="6" Padding="8,4" Margin="0,4,0,0">
+                                                <Grid ColumnDefinitions="Auto,*">
+                                                    <PathIcon Grid.Column="0" Data="{DynamicResource IconCalendar}" Width="11" Height="11" Foreground="{DynamicResource VantageAccentLightBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding PreferredSchedule, StringFormat='Jadwal Diinginkan: {0}', FallbackValue='Jadwal: Sesuai antrean'}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <!-- Col 3: Quick Action Buttons -->
+                                        <StackPanel Grid.Column="2" Spacing="6" VerticalAlignment="Center">
+                                            <!-- Detail Button -->
+                                            <Button Command="{Binding $parent[UserControl].((vm:TicketQueueViewModel)DataContext).OpenDetailCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="{DynamicResource VantageAccentBrush}"
+                                                    Foreground="White"
+                                                    FontWeight="Bold"
+                                                    FontSize="12"
+                                                    Padding="10,7"
+                                                    HorizontalAlignment="Stretch"
+                                                    HorizontalContentAlignment="Center">
+                                                <Grid ColumnDefinitions="Auto,*">
+                                                    <PathIcon Grid.Column="0" Data="{DynamicResource IconChevronRight}" Width="12" Height="12" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="Buka Detail Tiket" HorizontalAlignment="Center"/>
+                                                </Grid>
+                                            </Button>
+
+                                            <!-- Secondary Action (Workshop or Invoice) -->
+                                            <Grid ColumnDefinitions="*,*">
+                                                <Button Grid.Column="0"
+                                                        Command="{Binding $parent[UserControl].((vm:TicketQueueViewModel)DataContext).QuickTrackingCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Background="{DynamicResource VantageCardSubtleBrush}"
+                                                        BorderBrush="{DynamicResource VantageBorderBrush}"
+                                                        BorderThickness="1"
+                                                        Foreground="{DynamicResource VantageTextBrush}"
+                                                        FontSize="11"
+                                                        FontWeight="SemiBold"
+                                                        Padding="6,6"
+                                                        Margin="0,0,3,0"
+                                                        HorizontalAlignment="Stretch"
+                                                        HorizontalContentAlignment="Center"
+                                                        ToolTip.Tip="Update Progress Workshop SC">
+                                                    <TextBlock Text="Workshop"/>
+                                                </Button>
+
+                                                <Button Grid.Column="1"
+                                                        Command="{Binding $parent[UserControl].((vm:TicketQueueViewModel)DataContext).QuickInvoiceCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Background="{DynamicResource VantageCardSubtleBrush}"
+                                                        BorderBrush="{DynamicResource VantageBorderBrush}"
+                                                        BorderThickness="1"
+                                                        Foreground="{DynamicResource VantageTextBrush}"
+                                                        FontSize="11"
+                                                        FontWeight="SemiBold"
+                                                        Padding="6,6"
+                                                        Margin="3,0,0,0"
+                                                        HorizontalAlignment="Stretch"
+                                                        HorizontalContentAlignment="Center"
+                                                        ToolTip.Tip="Kelola Faktur / Biaya Suku Cadang">
+                                                    <TextBlock Text="Invoice"/>
+                                                </Button>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

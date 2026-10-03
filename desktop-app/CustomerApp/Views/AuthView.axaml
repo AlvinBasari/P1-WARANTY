@@ -1,0 +1,174 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CustomerApp.ViewModels"
+             x:Class="CustomerApp.Views.AuthView"
+             x:DataType="vm:AuthViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Border Padding="36,24" MaxWidth="560" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel Spacing="20">
+                <!-- Brand Title (PT Jaya Teknologi Solusi) -->
+                <StackPanel HorizontalAlignment="Center" Spacing="8">
+                    <Border Width="64" Height="46" Background="{DynamicResource VantageJtsLogoBrush}" CornerRadius="10" HorizontalAlignment="Center">
+                        <TextBlock Text="JTS" Foreground="White" FontWeight="Black" FontSize="22"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" LetterSpacing="1" />
+                    </Border>
+                    <TextBlock Text="PT Jaya Teknologi Solusi" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource VantageTextBrush}" />
+                    <TextBlock Text="Sistem Diagnostik &amp; Layanan Garansi Unit" FontSize="13" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <!-- BIOS Hardware ID Auto-detection Banner -->
+                <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="IDENTIFIKASI HARDWARE KOMPUTER INI" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" LetterSpacing="1" FontFamily="Consolas,Monospace" />
+                            <TextBlock Grid.Column="1" Text="✓ TERDETEKSI" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" />
+                        </Grid>
+                        <TextBlock Text="{Binding HardwareId}" FontFamily="Consolas,Monospace" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" />
+                        <TextBlock Text="{Binding DetectedModel, StringFormat='Model Fisik: {0}'}" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Server Connection Info & Configuration Banner -->
+                <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="16,14">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                            <!-- Indicator Light -->
+                            <Ellipse Grid.Column="0" Width="10" Height="10" Margin="0,0,8,0"
+                                     Fill="{Binding IsServerOnline, Converter={x:Static vm:AuthConverters.StatusBrush}}" />
+                            
+                            <!-- Server Address Display -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="Server:" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ServerUrl}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" FontFamily="Consolas,Monospace" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <!-- Settings / Change Button -->
+                            <Button Grid.Column="2" Command="{Binding ToggleServerConfigCommand}"
+                                    Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageAccentBrush}"
+                                    BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                    Padding="8,4" CornerRadius="6" FontSize="11" FontWeight="SemiBold">
+                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                    <PathIcon Data="{StaticResource IconSettings}" Width="11" Height="11" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Ubah IP" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Expandable Configuration Panel -->
+                        <StackPanel IsVisible="{Binding IsServerConfigExpanded}" Spacing="10" Margin="0,4,0,0">
+                            <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" Margin="0,2" />
+                            
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Alamat Server Backend (LAN / Wi-Fi):" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding ServerUrl, Mode=TwoWay}" FontFamily="Consolas,Monospace" FontSize="12" Watermark="http://192.168.1.X:8000/api" />
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconInfo}" Width="11" Height="11" Foreground="{DynamicResource VantageTextMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Contoh: http://192.168.42.243:8000/api (Gunakan IP komputer server pada port 8000)" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Grid ColumnDefinitions="*,*">
+                                <Button Grid.Column="0" Command="{Binding TestConnectionCommand}"
+                                        IsEnabled="{Binding !IsTestingConnection}"
+                                        Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageAccentBrush}"
+                                        BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                        Padding="8,6" CornerRadius="6" FontSize="12" FontWeight="SemiBold" Margin="0,0,4,0">
+                                    <TextBlock Text="{Binding IsTestingConnection, Converter={x:Static vm:AuthConverters.TestingTitle}}" />
+                                </Button>
+                                
+                                <Button Grid.Column="1" Command="{Binding SaveServerUrlCommand}"
+                                        Background="{DynamicResource VantageAccentBrush}" Foreground="White"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                        Padding="8,6" CornerRadius="6" FontSize="12" FontWeight="Bold" Margin="4,0,0,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconSave}" Width="12" Height="12" Foreground="White" VerticalAlignment="Center" />
+                                        <TextBlock Text="Simpan &amp; Hubungkan" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Server Status Feedback Message -->
+                        <TextBlock IsVisible="{Binding ServerStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Text="{Binding ServerStatusMessage}"
+                                   Foreground="{Binding IsServerOnline, Converter={x:Static vm:AuthConverters.StatusTextBrush}}"
+                                   FontSize="11" FontWeight="SemiBold" FontFamily="Consolas,Monospace" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Error Message Alert -->
+                <Border IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Background="{DynamicResource VantageFaultSubtleBrush}" BorderBrush="{DynamicResource VantageFaultBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10">
+                    <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource VantageFaultBrush}" FontSize="13" TextWrapping="Wrap" />
+                </Border>
+
+                <!-- Form Card -->
+                <Border Background="{DynamicResource VantageCardBrush}" CornerRadius="12" Padding="28" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding IsRegisterMode, Converter={x:Static vm:AuthConverters.ModeTitle}}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Command="{Binding FillDemoCustomerCommand}"
+                                    Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageAccentBrush}"
+                                    BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                    Padding="12,6" CornerRadius="6" FontSize="12" FontWeight="SemiBold">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconBolt}" Width="12" Height="12" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="Isi Akun Demo" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Register specific fields -->
+                        <StackPanel IsVisible="{Binding IsRegisterMode}" Spacing="12">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Nama Lengkap" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Name, Mode=TwoWay}" Watermark="Nama Lengkap Anda" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Nomor Telepon / WhatsApp" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Phone, Mode=TwoWay}" Watermark="08123456789" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Alamat Lengkap" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Address, Mode=TwoWay}" Watermark="Alamat tempat tinggal / kantor" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Common fields -->
+                        <StackPanel Spacing="12">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Email" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Email, Mode=TwoWay}" Watermark="email@anda.com" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Password, Mode=TwoWay}" PasswordChar="•" Watermark="••••••••" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Submit Button -->
+                        <Button Command="{Binding SubmitCommand}"
+                                IsEnabled="{Binding !IsLoading}"
+                                Background="{DynamicResource VantageAccentBrush}" Foreground="White"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Padding="14" CornerRadius="8" FontWeight="Bold" FontSize="14" Margin="0,8,0,0">
+                            <TextBlock Text="{Binding IsRegisterMode, Converter={x:Static vm:AuthConverters.ButtonTitle}}" />
+                        </Button>
+
+                        <!-- Switch Mode Toggle -->
+                        <Button Command="{Binding ToggleModeCommand}"
+                                Background="Transparent" Foreground="{DynamicResource VantageAccentBrush}"
+                                HorizontalAlignment="Center" FontWeight="SemiBold" FontSize="13">
+                            <TextBlock Text="{Binding IsRegisterMode, Converter={x:Static vm:AuthConverters.ToggleTitle}}" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>

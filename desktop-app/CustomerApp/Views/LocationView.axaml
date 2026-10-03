@@ -1,0 +1,318 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CustomerApp.ViewModels"
+             x:Class="CustomerApp.Views.LocationView"
+             x:DataType="vm:LocationViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border Padding="32,20,32,32" HorizontalAlignment="Stretch">
+            <StackPanel Spacing="22">
+                <!-- Header Title -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="Profil Akun &amp; Kalibrasi Lokasi" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                        <TextBlock Text="Kelola data profil, nomor WhatsApp untuk notifikasi status klaim, foto akun, dan titik alamat penjemputan unit on-site."
+                                   FontSize="13" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" LineHeight="20" />
+                    </StackPanel>
+
+                    <!-- Edit Toggle Button when in saved mode -->
+                    <Button Grid.Column="1" Command="{Binding EnterEditModeCommand}" IsVisible="{Binding !IsEditMode}"
+                            Background="{DynamicResource VantageAccentBrush}" Foreground="White"
+                            Padding="16,10" CornerRadius="8" FontWeight="SemiBold" FontSize="13"
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <PathIcon Data="{StaticResource IconEdit}" Foreground="White" Width="14" Height="14" VerticalAlignment="Center" />
+                            <TextBlock Text="Ubah Data Profil &amp; Alamat" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- Feedback Toast / Success Alert -->
+                <Border IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}"
+                        BorderThickness="1" CornerRadius="8" Padding="16,12">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <PathIcon Data="{StaticResource IconCheck}" Foreground="{DynamicResource VantageGreenBrush}" Width="16" Height="16" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SuccessMessage}" Foreground="{DynamicResource VantageGreenBrush}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Feedback Error Alert -->
+                <Border IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Background="{DynamicResource VantageFaultSubtleBrush}" BorderBrush="{DynamicResource VantageFaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16,12">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <PathIcon Data="{StaticResource IconAlert}" Foreground="{DynamicResource VantageFaultBrush}" Width="16" Height="16" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource VantageFaultBrush}" FontSize="13" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- ============================================================= -->
+                <!-- SECTION 1: PROFIL AKUN & KONTAK WHATSAPP                      -->
+                <!-- ============================================================= -->
+                <Border Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                        BorderThickness="1" CornerRadius="12" Padding="24">
+                    <StackPanel Spacing="18">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <PathIcon Data="{StaticResource IconUser}" Width="18" Height="18" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Informasi Akun Pengguna &amp; Kontak WhatsApp" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                        <Grid ColumnDefinitions="Auto,*">
+                            <!-- Left: Avatar Image & Picker -->
+                            <StackPanel Grid.Column="0" Spacing="10" Margin="0,0,28,0" HorizontalAlignment="Center" VerticalAlignment="Top">
+                                <Panel Width="90" Height="90">
+                                    <!-- Fallback Avatar Initial -->
+                                    <Border Width="90" Height="90" CornerRadius="45" Background="{DynamicResource VantageAccentSubtleBrush}"
+                                            BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="2"
+                                            IsVisible="{Binding AvatarBitmap, Converter={x:Static ObjectConverters.IsNull}}">
+                                        <TextBlock Text="{Binding UserInitial}" FontSize="32" FontWeight="Black"
+                                                   Foreground="{DynamicResource VantageAccentBrush}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+
+                                    <!-- Actual Avatar Image -->
+                                    <Border Width="90" Height="90" CornerRadius="45" ClipToBounds="True"
+                                            BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="2"
+                                            IsVisible="{Binding AvatarBitmap, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                        <Image Source="{Binding AvatarBitmap}" Width="90" Height="90" Stretch="UniformToFill" />
+                                    </Border>
+                                </Panel>
+
+                                <Button Command="{Binding PickAvatarImageCommand}"
+                                        Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
+                                        Foreground="{DynamicResource VantageTextBrush}" Padding="10,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold"
+                                        HorizontalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <PathIcon Data="{StaticResource IconCamera}" Width="12" Height="12" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="Pilih Foto" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Command="{Binding RemoveAvatarCommand}"
+                                        IsVisible="{Binding AvatarBitmap, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                        Background="Transparent" Foreground="{DynamicResource VantageFaultBrush}" Padding="6,2" FontSize="10"
+                                        HorizontalAlignment="Center">
+                                    <TextBlock Text="Hapus Foto" />
+                                </Button>
+                            </StackPanel>
+
+                            <!-- Right: Name, WhatsApp, Email Inputs -->
+                            <StackPanel Grid.Column="1" Spacing="14">
+                                <Grid ColumnDefinitions="*,*">
+                                    <!-- Nama Lengkap -->
+                                    <StackPanel Grid.Column="0" Margin="0,0,10,0" Spacing="6">
+                                        <TextBlock Text="Nama Lengkap Pemilik" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                        <TextBox Text="{Binding UserName, Mode=TwoWay}"
+                                                 FontSize="13" Padding="12,10" CornerRadius="8"
+                                                 Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}"
+                                                 BorderBrush="{DynamicResource VantageBorderBrush}"
+                                                 Watermark="Contoh: Budi Santoso" />
+                                    </StackPanel>
+
+                                    <!-- No. WhatsApp -->
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="6">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="No. WhatsApp / Kontak Utama" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                            <Border Background="{DynamicResource VantageGreenSubtleBrush}" CornerRadius="4" Padding="6,2">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <PathIcon Data="{StaticResource IconWhatsApp}" Width="9" Height="9" Foreground="{DynamicResource VantageGreenBrush}" VerticalAlignment="Center" />
+                                                    <TextBlock Text="NOTIFIKASI RESMI" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" FontFamily="Consolas,Monospace" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBox Text="{Binding UserWhatsapp, Mode=TwoWay}"
+                                                 FontSize="13" Padding="12,10" CornerRadius="8"
+                                                 Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}"
+                                                 BorderBrush="{DynamicResource VantageBorderBrush}"
+                                                 Watermark="Contoh: 081234567890" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Email Akun -->
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Alamat Email Akun Terdaftar" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                    <TextBox Text="{Binding UserEmail, Mode=TwoWay}"
+                                             FontSize="13" Padding="12,10" CornerRadius="8"
+                                             Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}"
+                                             BorderBrush="{DynamicResource VantageBorderBrush}"
+                                             Watermark="Contoh: user@domain.com" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ============================================================= -->
+                <!-- SECTION 2: ALAMAT RUMAH & KALIBRASI GPS                       -->
+                <!-- ============================================================= -->
+                <!-- Summary Card (When Saved & Not Editing) -->
+                <Border IsVisible="{Binding !IsEditMode}"
+                        Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                        BorderThickness="1" CornerRadius="12" Padding="24">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Border Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}"
+                                            BorderThickness="1" CornerRadius="6" Padding="8,3">
+                                        <TextBlock Text="{Binding SavedLocationType}" FontSize="11" FontWeight="Bold" FontFamily="Consolas,Monospace" Foreground="{DynamicResource VantageAccentLightBrush}" />
+                                    </Border>
+                                    <Border Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}"
+                                            BorderThickness="1" CornerRadius="6" Padding="8,3">
+                                        <TextBlock Text="✓ TITIK TERKALIBRASI" FontSize="11" FontWeight="Bold" FontFamily="Consolas,Monospace" Foreground="{DynamicResource VantageGreenBrush}" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="Alamat Resmi Penjemputan Servis" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" Margin="0,4">
+                            <PathIcon Grid.Column="0" Grid.Row="0" Data="{StaticResource IconLocation}" Foreground="{DynamicResource VantageAccentBrush}"
+                                      Width="18" Height="18" Margin="0,2,14,0" VerticalAlignment="Top" />
+                            <StackPanel Grid.Column="1" Grid.Row="0" Spacing="4">
+                                <TextBlock Text="Detail Alamat Lengkap:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBlock Text="{Binding SavedFullAddress}" FontSize="13" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" LineHeight="20" FontWeight="Medium" />
+                            </StackPanel>
+
+                            <PathIcon Grid.Column="0" Grid.Row="1" Data="{StaticResource IconGps}" Foreground="{DynamicResource VantageAccentBrush}"
+                                      Width="16" Height="16" Margin="0,14,14,0" VerticalAlignment="Top" />
+                            <StackPanel Grid.Column="1" Grid.Row="1" Spacing="4" Margin="0,12,0,0">
+                                <TextBlock Text="Koordinat GPS Terkalibrasi:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <Border Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                        BorderThickness="1" CornerRadius="6" Padding="10,6" HorizontalAlignment="Left">
+                                    <TextBlock Text="{Binding SavedCoordinates}" FontFamily="Consolas,Monospace" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageAccentLightBrush}" />
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Form Input View (When In Edit Mode) -->
+                <Border IsVisible="{Binding IsEditMode}"
+                        Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                        BorderThickness="1" CornerRadius="12" Padding="24">
+                    <StackPanel Spacing="20">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <PathIcon Data="{StaticResource IconLocation}" Width="18" Height="18" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Detail Alamat Rumah &amp; Koordinat GPS Penjemputan" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Separator Background="{DynamicResource VantageBorderBrush}" Height="1" />
+
+                        <!-- Tipe Lokasi -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Tipe Properti / Bangunan" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <RadioButton Content="Rumah Tinggal" IsChecked="True" GroupName="LocType"
+                                             Command="{Binding $parent[UserControl].((vm:LocationViewModel)DataContext).LocationType}"
+                                             FontSize="12" Foreground="{DynamicResource VantageTextBrush}" />
+                                <RadioButton Content="Kantor / Tempat Kerja" GroupName="LocType"
+                                             FontSize="12" Foreground="{DynamicResource VantageTextBrush}" />
+                                <RadioButton Content="Apartemen / Rusun" GroupName="LocType"
+                                             FontSize="12" Foreground="{DynamicResource VantageTextBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Alamat Jalan & Nomor -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Nama Jalan, Nomor Rumah / Blok Bangunan" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                            <TextBox Text="{Binding Street, Mode=TwoWay}"
+                                     FontSize="13" Padding="12,10" CornerRadius="8"
+                                     Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}"
+                                     BorderBrush="{DynamicResource VantageBorderBrush}"
+                                     Watermark="Contoh: Jl. Sudirman No. 45, RT 02/05, Blok C" />
+                        </StackPanel>
+
+                        <!-- Grid RT / RW / Kelurahan / Kecamatan -->
+                        <Grid ColumnDefinitions="*,*,*,*">
+                            <StackPanel Grid.Column="0" Margin="0,0,8,0" Spacing="6">
+                                <TextBlock Text="RT" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Rt, Mode=TwoWay}" Watermark="01" Padding="10,8" CornerRadius="6" Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="4,0,4,0" Spacing="6">
+                                <TextBlock Text="RW" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Rw, Mode=TwoWay}" Watermark="05" Padding="10,8" CornerRadius="6" Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="4,0,4,0" Spacing="6">
+                                <TextBlock Text="Kelurahan / Desa" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Kelurahan, Mode=TwoWay}" Watermark="Kuningan Barat" Padding="10,8" CornerRadius="6" Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="3" Margin="8,0,0,0" Spacing="6">
+                                <TextBlock Text="Kecamatan" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Kecamatan, Mode=TwoWay}" Watermark="Mampang Prapatan" Padding="10,8" CornerRadius="6" Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Grid Kota & Provinsi & Patokan -->
+                        <Grid ColumnDefinitions="*,*,*">
+                            <StackPanel Grid.Column="0" Margin="0,0,8,0" Spacing="6">
+                                <TextBlock Text="Kota / Kabupaten" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding City, Mode=TwoWay}" Padding="10,8" CornerRadius="6" Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="4,0,4,0" Spacing="6">
+                                <TextBlock Text="Provinsi" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Province, Mode=TwoWay}" Padding="10,8" CornerRadius="6" Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="8,0,0,0" Spacing="6">
+                                <TextBlock Text="Patokan Rumah (Opsional)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                <TextBox Text="{Binding Landmark, Mode=TwoWay}" Watermark="Pagar hitam / dekat pos satpam" Padding="10,8" CornerRadius="6" Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- GPS Coordinates Card -->
+                        <Border Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                BorderThickness="1" CornerRadius="10" Padding="16">
+                            <StackPanel Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="Titik Presisi GPS (Latitude, Longitude)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
+                                        <TextBlock Text="Teknisi lapangan akan mengarahkan rute navigasi ke koordinat ini." FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" />
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1" Command="{Binding AutoDetectLocationCommand}"
+                                            IsEnabled="{Binding !IsDetectingGps}"
+                                            Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}"
+                                            BorderThickness="1" Foreground="{DynamicResource VantageAccentBrush}"
+                                            Padding="12,6" CornerRadius="6" FontSize="11" FontWeight="SemiBold">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon Data="{StaticResource IconGps}" Width="12" Height="12" Foreground="{DynamicResource VantageAccentBrush}" />
+                                            <TextBlock Text="Deteksi Ulang GPS" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,*">
+                                    <StackPanel Grid.Column="0" Margin="0,0,6,0" Spacing="4">
+                                        <TextBlock Text="Latitude" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                        <TextBox Text="{Binding Latitude, Mode=TwoWay}" FontFamily="Consolas,Monospace" FontSize="12" Padding="8,6" CornerRadius="6" Background="{DynamicResource VantageCardBrush}" Foreground="{DynamicResource VantageTextBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="6,0,0,0" Spacing="4">
+                                        <TextBlock Text="Longitude" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
+                                        <TextBox Text="{Binding Longitude, Mode=TwoWay}" FontFamily="Consolas,Monospace" FontSize="12" Padding="8,6" CornerRadius="6" Background="{DynamicResource VantageCardBrush}" Foreground="{DynamicResource VantageTextBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Text="{Binding GpsStatusMessage}" IsVisible="{Binding GpsStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                           FontSize="11" Foreground="{DynamicResource VantageAccentBrush}" FontStyle="Italic" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Submit Button -->
+                        <Button Command="{Binding SaveProfileAndLocationCommand}"
+                                IsEnabled="{Binding !IsLoading}"
+                                Background="{DynamicResource VantageAccentBrush}" Foreground="White"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Padding="14" CornerRadius="8" FontWeight="Bold" FontSize="14">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconCheck}" Foreground="White" Width="14" Height="14" VerticalAlignment="Center" />
+                                <TextBlock Text="Simpan Perubahan Akun &amp; Lokasi" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>
