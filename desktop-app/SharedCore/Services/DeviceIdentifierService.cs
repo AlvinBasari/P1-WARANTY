@@ -83,7 +83,7 @@ namespace SharedCore.Services
 
             if (string.IsNullOrWhiteSpace(model))
             {
-                model = $"{Environment.MachineName} ({RuntimeInformation.OSDescription})";
+                model = $"{Environment.MachineName} ({OperatingSystemInfoHelper.GetFriendlyOsDescription()})";
             }
 
             _cachedModelName = model;

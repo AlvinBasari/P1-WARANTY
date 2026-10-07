@@ -31,7 +31,7 @@ namespace SharedCore.Services
         public bool IsBattery { get; set; } = false;
 
         public string BiosVersion { get; set; } = "M16KT37A";
-        public string OsDescription { get; set; } = RuntimeInformation.OSDescription;
+        public string OsDescription { get; set; } = OperatingSystemInfoHelper.GetFriendlyOsDescription();
         public string ProcessorName { get; set; } = "Intel(R) Core(TM) Processor";
         public int ProcessorCores { get; set; } = Environment.ProcessorCount;
     }
@@ -415,7 +415,7 @@ namespace SharedCore.Services
             // 5. OS and Processor Information
             try
             {
-                metrics.OsDescription = RuntimeInformation.OSDescription;
+                metrics.OsDescription = OperatingSystemInfoHelper.GetFriendlyOsDescription();
                 metrics.ProcessorCores = Environment.ProcessorCount;
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/proc/cpuinfo"))

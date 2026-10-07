@@ -7,6 +7,13 @@ namespace DesktopApp.Tests
 {
     public class DeviceServiceTests
     {
+        private readonly Xunit.Abstractions.ITestOutputHelper _output;
+
+        public DeviceServiceTests(Xunit.Abstractions.ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact]
         public void GetHardwareId_ReturnsNonEmptyValidString()
         {
@@ -75,6 +82,45 @@ namespace DesktopApp.Tests
 
             // Cleanup test artifact
             try { System.IO.File.Delete(savedPath); } catch { }
+        }
+
+        [Fact]
+        public void OperatingSystemInfoHelper_ReturnsAccurateFriendlyOsDescription()
+        {
+            string os = OperatingSystemInfoHelper.GetFriendlyOsDescription();
+            _output.WriteLine($"[DETECTED OS RESULT]: {os}");
+
+            Assert.False(string.IsNullOrWhiteSpace(os));
+
+            if (System.OperatingSystem.IsWindows())
+            {
+                int build = System.Environment.OSVersion.Version.Build;
+                if (build >= 22000)
+                {
+                    // Must detect as Windows 11, never raw Windows 10
+                    Assert.Contains("Windows 11", os);
+                    Assert.DoesNotContain("Windows 10.0", os);
+                }
+                else
+                {
+                    Assert.Contains("Windows", os);
+                }
+            }
+        }
+
+        [Fact]
+        public void MotherboardAndMetrics_ReturnConsistentFriendlyOsDescription()
+        {
+            var detailedHwService = new DetailedHardwareInfoService();
+            var mb = detailedHwService.GetMotherboardDetails();
+
+            var metricsService = new SystemMetricsService();
+            var metrics = metricsService.GetSystemMetrics();
+
+            string expectedOs = OperatingSystemInfoHelper.GetFriendlyOsDescription();
+
+            Assert.Equal(expectedOs, mb.OsName);
+            Assert.Equal(expectedOs, metrics.OsDescription);
         }
     }
 }

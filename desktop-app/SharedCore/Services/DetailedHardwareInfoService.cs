@@ -137,7 +137,7 @@ namespace SharedCore.Services
         public string BiosVersion { get; set; } = "BIOS-VER-1.0";
         public string BiosReleaseDate { get; set; } = "2023-01-01";
         public string SystemUuid { get; set; } = "DMI-UUID";
-        public string OsName { get; set; } = RuntimeInformation.OSDescription;
+        public string OsName { get; set; } = OperatingSystemInfoHelper.GetFriendlyOsDescription();
         public string Architecture { get; set; } = RuntimeInformation.ProcessArchitecture.ToString();
         public string WhitelistSignature { get; set; } = "SHA256-VERIFIED-JTS-OEM";
 
@@ -958,7 +958,7 @@ namespace SharedCore.Services
                 ProductModel = _deviceService.GetDeviceModel(),
                 SerialNumber = _deviceService.GetSerialNumber(),
                 SystemUuid = _deviceService.GetHardwareId(),
-                OsName = RuntimeInformation.OSDescription,
+                OsName = OperatingSystemInfoHelper.GetFriendlyOsDescription(),
                 Architecture = RuntimeInformation.ProcessArchitecture.ToString()
             };
 
