@@ -468,17 +468,52 @@ namespace SharedCore.Services
         /// Menganalisis media penyimpanan (Storage) dan menghasilkan saran upgrade SSD/HDD yang ramah konsumen.
         /// </summary>
         public static (string FormFactor, string M2Status, string SataStatus, string Recommendation, string Feasibility, string EstimatedGain)
-            AnalyzeStorage(string diskModel, bool isRotationalHdd, double totalGb, DeviceCategory category, bool? isNvmeExplicit = null)
+            AnalyzeStorage(string diskModel, bool isRotationalHdd, double totalGb, DeviceCategory category, bool? isNvmeExplicit = null, int driveCount = 1)
         {
             bool isLaptop = category == DeviceCategory.Laptop;
             string upper = (diskModel ?? "").ToUpperInvariant();
             bool isNvme = isNvmeExplicit ?? (
                 upper.Contains("NVME") || upper.Contains("PCIE") || (diskModel ?? "").StartsWith("nvme", StringComparison.OrdinalIgnoreCase) ||
+                upper.Contains("MTFDK") || upper.Contains("MZAL") ||
                 upper.Contains("MZVL") || upper.Contains("MZ-V") || upper.Contains("MZV") || upper.Contains("SN750") ||
                 upper.Contains("SN850") || upper.Contains("SN570") || upper.Contains("SN770") || upper.Contains("CT500P") ||
                 upper.Contains("CT1000P") || upper.Contains("WD_BLACK") || upper.Contains("SSDPEK") || upper.Contains("SOLIDIGM") ||
-                upper.Contains("MICRON_2") || upper.Contains("970 EVO") || upper.Contains("980 PRO") || upper.Contains("990 PRO")
+                upper.Contains("MICRON") || upper.Contains("970 EVO") || upper.Contains("980 PRO") || upper.Contains("990 PRO")
             );
+
+            if (driveCount >= 2)
+            {
+                if (isNvme)
+                {
+                    string formFactor = "Dual Slot SSD M.2 NVMe PCIe";
+                    string m2Status = "2x Slot M.2 Terpasang Penuh (Dual NVMe)";
+                    string sataStatus = isLaptop ? "Port Ekspansi Internal Aktif" : "Slot M.2 & Port SATA Terisi Optimal";
+                    string recommendation = "Perangkat Anda telah menggunakan konfigurasi Dual NVMe SSD pada kedua slot fisik. Ruang sistem dan partisi data terdistribusi optimal dengan throughput transfer maksimal di kedua drive.";
+                    string feasibility = "2 Slot Terpasang Penuh (Dual NVMe)";
+                    string gain = "Kecepatan akses data, transfer antardrive, dan waktu loading aplikasi sudah berada pada performa puncak.";
+                    return (formFactor, m2Status, sataStatus, recommendation, feasibility, gain);
+                }
+                else if (isRotationalHdd)
+                {
+                    string formFactor = "Multi-Drive (Hybrid SSD + HDD)";
+                    string m2Status = "1x Slot M.2 NVMe / SATA Terpasang";
+                    string sataStatus = "1x Bay SATA HDD Terpasang";
+                    string recommendation = "Perangkat Anda menggunakan konfigurasi hybrid: SSD cepat untuk sistem operasi dan HDD berkapasitas besar untuk arsip data berkas.";
+                    string feasibility = "Konfigurasi Hybrid Optimal";
+                    string gain = "Booting cepat dari SSD dengan kapasitas penyimpanan lega dari HDD sekunder.";
+                    return (formFactor, m2Status, sataStatus, recommendation, feasibility, gain);
+                }
+                else
+                {
+                    string formFactor = "Dual Solid State Drive (SSD)";
+                    string m2Status = "Slot M.2 / SATA Aktif";
+                    string sataStatus = "Port SATA / M.2 Sekunder Aktif";
+                    string recommendation = "Perangkat Anda menggunakan konfigurasi multi-drive SSD. Kedua media penyimpanan berbasis flash disk yang responsif dan bebas risiko guncangan mekanik.";
+                    string feasibility = "2 Drive SSD Aktif & Optimal";
+                    string gain = "Responsivitas sistem dan partisi penyimpanan data kedua-duanya sangat cepat.";
+                    return (formFactor, m2Status, sataStatus, recommendation, feasibility, gain);
+                }
+            }
 
             if (isRotationalHdd)
             {
@@ -494,7 +529,7 @@ namespace SharedCore.Services
             else if (isNvme)
             {
                 string formFactor = "SSD M.2 NVMe PCIe";
-                string m2Status = "Slot M.2 Terpasang SSD NVMe Cepat";
+                string m2Status = isLaptop ? "1x Slot M.2 Terpasang (Slot Sekunder Siap Ekspansi)" : "Slot M.2 Terpasang SSD NVMe Cepat";
                 string sataStatus = isLaptop ? "Port Ekspansi Internal Aktif" : "Tersedia Slot M.2 / SATA Tambahan";
                 string recommendation = "Perangkat Anda sudah menggunakan SSD NVMe berkecepatan tinggi. Upgrade hanya diperlukan jika ruang penyimpanan mulai penuh dengan mengganti ke kapasitas lebih besar (1 TB / 2 TB) atau memasang drive sekunder.";
                 string feasibility = "Performa Sudah Maksimal (NVMe)";

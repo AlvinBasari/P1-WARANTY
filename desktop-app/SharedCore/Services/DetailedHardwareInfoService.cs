@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Management;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -60,6 +61,35 @@ namespace SharedCore.Services
         public string UpgradeFeasibility { get; set; } = string.Empty;
     }
 
+    public class PhysicalDriveInfo
+    {
+        public int Index { get; set; }
+        public string SlotName { get; set; } = "Slot 1 (Drive Utama)";
+        public string Model { get; set; } = "Solid State Drive";
+        public string InterfaceType { get; set; } = "NVMe M.2 PCIe";
+        public string BusType { get; set; } = "NVMe PCIe";
+        public double SizeGb { get; set; } = 512.0;
+        public string MediaType { get; set; } = "Solid State Drive (SSD)";
+        public bool IsRotationalHdd { get; set; } = false;
+        public string PhysicalLocation { get; set; } = "Internal";
+        public string HealthStatus { get; set; } = "100% Sehat (Good Condition)";
+        public string AssignedLetters { get; set; } = string.Empty;
+        public string FormFactor { get; set; } = "M.2 2280";
+        public bool IsPrimary { get; set; } = true;
+    }
+
+    public class LogicalPartitionInfo
+    {
+        public string DriveLetter { get; set; } = "C:\\";
+        public string VolumeLabel { get; set; } = "Windows-SSD";
+        public string FileSystem { get; set; } = "NTFS";
+        public double TotalGb { get; set; } = 500.0;
+        public double FreeGb { get; set; } = 450.0;
+        public double UsedGb { get; set; } = 50.0;
+        public int UsedPercent { get; set; } = 10;
+        public bool IsSystem { get; set; } = true;
+    }
+
     public class StorageDetailedInfo
     {
         public string DiskModel { get; set; } = "Physical Storage Device";
@@ -79,6 +109,15 @@ namespace SharedCore.Services
         public string SmartStatus { get; set; } = "100% Sehat (Good Condition)";
         public string BadSectors { get; set; } = "0 Bad Sectors (Normal)";
         public string TrimStatus { get; set; } = "Aktif (TRIM Enabled)";
+
+        // Multi-slot & Multi-drive Support
+        public int DriveCount { get; set; } = 1;
+        public bool HasMultipleDrives => DriveCount > 1;
+        public string SlotsSummary { get; set; } = "1 Drive Terpasang";
+        public string PrimaryDriveSummary { get; set; } = string.Empty;
+        public string SecondaryDriveSummary { get; set; } = string.Empty;
+        public List<PhysicalDriveInfo> PhysicalDrives { get; set; } = new();
+        public List<LogicalPartitionInfo> Partitions { get; set; } = new();
 
         // Upgrade Readiness Properties
         public string UpgradeRecommendation { get; set; } = string.Empty;
@@ -589,31 +628,56 @@ namespace SharedCore.Services
             var category = GetCurrentDeviceCategory();
             var storage = new StorageDetailedInfo();
 
-            // 1. Get real filesystem drive sizes
+            // 1. Get real filesystem drive sizes & partitions across all ready fixed drives
             try
             {
                 DriveInfo[] drives = DriveInfo.GetDrives();
                 foreach (var d in drives)
                 {
-                    if (d.IsReady && (d.RootDirectory.FullName == "/" || d.RootDirectory.FullName.StartsWith("C", StringComparison.OrdinalIgnoreCase)))
+                    if (d.IsReady && (d.DriveType == DriveType.Fixed || d.RootDirectory.FullName == "/"))
                     {
-                        storage.TotalGb = Math.Round(d.TotalSize / (1024.0 * 1024.0 * 1024.0), 1);
-                        storage.FreeGb = Math.Round(d.AvailableFreeSpace / (1024.0 * 1024.0 * 1024.0), 1);
-                        storage.UsedGb = Math.Round(storage.TotalGb - storage.FreeGb, 1);
-                        storage.UsedPercent = (int)Math.Round((storage.UsedGb / storage.TotalGb) * 100);
-                        storage.FileSystem = d.DriveFormat ?? "NTFS";
-                        storage.MountPoint = d.RootDirectory.FullName;
-                        break;
+                        double total = Math.Round(d.TotalSize / (1024.0 * 1024.0 * 1024.0), 1);
+                        double free = Math.Round(d.AvailableFreeSpace / (1024.0 * 1024.0 * 1024.0), 1);
+                        double used = Math.Round(total - free, 1);
+                        int percent = total > 0 ? (int)Math.Round((used / total) * 100) : 0;
+                        string letter = d.RootDirectory.FullName;
+                        string label = string.Empty;
+                        try { label = d.VolumeLabel ?? string.Empty; } catch { }
+                        string fs = d.DriveFormat ?? "NTFS";
+                        bool isSys = letter.StartsWith("C", StringComparison.OrdinalIgnoreCase) || letter == "/";
+
+                        storage.Partitions.Add(new LogicalPartitionInfo
+                        {
+                            DriveLetter = letter,
+                            VolumeLabel = label,
+                            FileSystem = fs,
+                            TotalGb = total,
+                            FreeGb = free,
+                            UsedGb = used,
+                            UsedPercent = Math.Clamp(percent, 0, 100),
+                            IsSystem = isSys
+                        });
                     }
+                }
+
+                if (storage.Partitions.Count > 0)
+                {
+                    storage.TotalGb = Math.Round(storage.Partitions.Sum(p => p.TotalGb), 1);
+                    storage.FreeGb = Math.Round(storage.Partitions.Sum(p => p.FreeGb), 1);
+                    storage.UsedGb = Math.Round(storage.Partitions.Sum(p => p.UsedGb), 1);
+                    storage.UsedPercent = storage.TotalGb > 0 ? (int)Math.Round((storage.UsedGb / storage.TotalGb) * 100) : 0;
+                    storage.FileSystem = string.Join(", ", storage.Partitions.Select(p => $"{p.DriveLetter} ({p.FileSystem})"));
+                    storage.MountPoint = string.Join(", ", storage.Partitions.Select(p => string.IsNullOrWhiteSpace(p.VolumeLabel) ? p.DriveLetter : $"{p.DriveLetter} [{p.VolumeLabel}]"));
                 }
             }
             catch { }
 
-            // 2. Read real hardware disk model and HDD/SSD rotational flag
+            // 2. Read real hardware physical disks & identify all installed storage slots
             try
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && Directory.Exists("/sys/block"))
                 {
+                    int indexCounter = 0;
                     foreach (var devPath in Directory.GetDirectories("/sys/block"))
                     {
                         string devName = Path.GetFileName(devPath);
@@ -623,69 +687,161 @@ namespace SharedCore.Services
                         string modelFile = Path.Combine(devPath, "device", "model");
                         string vendorFile = Path.Combine(devPath, "device", "vendor");
                         string rotaFile = Path.Combine(devPath, "queue", "rotational");
+                        string sizeFile = Path.Combine(devPath, "size");
 
-                        string modelStr = "";
-                        if (File.Exists(modelFile))
-                            modelStr = File.ReadAllText(modelFile).Trim();
-
-                        string vendorStr = "";
-                        if (File.Exists(vendorFile))
-                            vendorStr = File.ReadAllText(vendorFile).Trim();
-
+                        string modelStr = File.Exists(modelFile) ? File.ReadAllText(modelFile).Trim() : "";
+                        string vendorStr = File.Exists(vendorFile) ? File.ReadAllText(vendorFile).Trim() : "";
                         string fullDiskName = string.IsNullOrEmpty(vendorStr) ? modelStr : $"{vendorStr} {modelStr}".Trim();
+                        if (string.IsNullOrWhiteSpace(fullDiskName)) fullDiskName = devName;
 
                         bool isRotational = true;
                         if (File.Exists(rotaFile) && int.TryParse(File.ReadAllText(rotaFile).Trim(), out var rota))
-                        {
                             isRotational = (rota == 1);
-                        }
 
-                        if (!string.IsNullOrWhiteSpace(fullDiskName))
+                        double sizeGb = 0;
+                        if (File.Exists(sizeFile) && long.TryParse(File.ReadAllText(sizeFile).Trim(), out var sectors))
+                            sizeGb = Math.Round((sectors * 512.0) / (1024.0 * 1024.0 * 1024.0), 1);
+
+                        bool isNvme = devName.StartsWith("nvme");
+                        string slotTitle = isNvme
+                            ? (indexCounter == 0 ? "Slot 1 (M.2 NVMe Primary)" : $"Slot {indexCounter + 1} (M.2 NVMe Secondary)")
+                            : (indexCounter == 0 ? "Slot 1 (Drive Utama)" : $"Slot {indexCounter + 1} (Drive Sekunder)");
+
+                        storage.PhysicalDrives.Add(new PhysicalDriveInfo
                         {
-                            storage.DiskModel = fullDiskName;
-                            storage.IsRotationalHdd = isRotational;
-                            if (isRotational)
-                            {
-                                storage.InterfaceType = "SATA III (Mechanical HDD / 7200 RPM)";
-                                storage.TrimStatus = "Tidak Berlaku (Mechanical HDD)";
-                                storage.SequentialReadMb = 135.0;
-                                storage.SequentialWriteMb = 118.0;
-                            }
-                            else
-                            {
-                                if (devName.StartsWith("nvme"))
-                                {
-                                    storage.InterfaceType = "NVMe M.2 PCIe Gen 3.0 / 4.0";
-                                    storage.SequentialReadMb = 3500.0;
-                                    storage.SequentialWriteMb = 3000.0;
-                                }
-                                else
-                                {
-                                    storage.InterfaceType = "SATA III Solid State Drive";
-                                    storage.SequentialReadMb = 540.0;
-                                    storage.SequentialWriteMb = 490.0;
-                                }
-                                storage.TrimStatus = "Didukung & Aktif (TRIM Enabled)";
-                            }
-                            break;
-                        }
+                            Index = indexCounter,
+                            SlotName = slotTitle,
+                            Model = fullDiskName,
+                            InterfaceType = isNvme ? "NVMe M.2 PCIe" : (isRotational ? "SATA III (HDD)" : "SATA III (SSD)"),
+                            BusType = isNvme ? "NVMe PCIe" : (isRotational ? "SATA HDD" : "SATA SSD"),
+                            SizeGb = sizeGb > 0 ? sizeGb : 500.0,
+                            MediaType = isRotational ? "Mechanical HDD" : "Solid State Drive (SSD)",
+                            IsRotationalHdd = isRotational,
+                            PhysicalLocation = $"/dev/{devName}",
+                            HealthStatus = "100% Sehat (Good Condition)",
+                            AssignedLetters = devName,
+                            FormFactor = isNvme ? "M.2 2280" : (isRotational ? "3.5\"/2.5\" Bay" : "2.5\" SATA"),
+                            IsPrimary = (indexCounter == 0)
+                        });
+                        indexCounter++;
                     }
                 }
                 else if (OperatingSystem.IsWindows())
                 {
+                    // A. Read disk-to-partition-to-volume associations
+                    var diskToLetters = new Dictionary<int, List<string>>();
                     try
                     {
-                        using var searcher = new System.Management.ManagementObjectSearcher(
-                            "SELECT Model, InterfaceType, MediaType, Size FROM Win32_DiskDrive");
-                        foreach (System.Management.ManagementObject obj in searcher.Get())
+                        using var mapSearcher = new System.Management.ManagementObjectSearcher(
+                            "SELECT Antecedent, Dependent FROM Win32_LogicalDiskToPartition");
+                        foreach (System.Management.ManagementObject obj in mapSearcher.Get())
                         {
-                            string model = (obj["Model"]?.ToString() ?? "").Trim();
-                            string iface = (obj["InterfaceType"]?.ToString() ?? "").Trim();
-                            string media = (obj["MediaType"]?.ToString() ?? "").Trim();
-
-                            if (!string.IsNullOrEmpty(model))
+                            string ant = obj["Antecedent"]?.ToString() ?? "";
+                            string dep = obj["Dependent"]?.ToString() ?? "";
+                            int diskIdx = -1;
+                            int hashPos = ant.IndexOf("Disk #", StringComparison.OrdinalIgnoreCase);
+                            if (hashPos >= 0)
                             {
-                                storage.DiskModel = model;
+                                int commaPos = ant.IndexOf(',', hashPos);
+                                string numStr = commaPos > hashPos
+                                    ? ant.Substring(hashPos + 6, commaPos - (hashPos + 6)).Trim()
+                                    : "";
+                                int.TryParse(numStr, out diskIdx);
+                            }
+
+                            string driveLet = "";
+                            int idPos = dep.IndexOf("DeviceID=\"", StringComparison.OrdinalIgnoreCase);
+                            if (idPos >= 0)
+                            {
+                                driveLet = dep.Substring(idPos + 10).TrimEnd('"', ' ', ')');
+                            }
+
+                            if (diskIdx >= 0 && !string.IsNullOrEmpty(driveLet))
+                            {
+                                if (!diskToLetters.ContainsKey(diskIdx))
+                                    diskToLetters[diskIdx] = new List<string>();
+                                if (!diskToLetters[diskIdx].Contains(driveLet))
+                                    diskToLetters[diskIdx].Add(driveLet);
+                            }
+                        }
+                    }
+                    catch { }
+
+                    // B. Read physical storage devices (try MSFT_PhysicalDisk first for precise slot locations)
+                    try
+                    {
+                        using var msftSearcher = new System.Management.ManagementObjectSearcher(
+                            @"root\Microsoft\Windows\Storage",
+                            "SELECT DeviceId, FriendlyName, MediaType, BusType, Size, PhysicalLocation FROM MSFT_PhysicalDisk");
+                        int count = 0;
+                        foreach (System.Management.ManagementObject obj in msftSearcher.Get())
+                        {
+                            string devId = obj["DeviceId"]?.ToString() ?? $"{count}";
+                            string name = (obj["FriendlyName"]?.ToString() ?? "").Trim();
+                            if (string.IsNullOrEmpty(name)) continue;
+
+                            int.TryParse(devId, out var diskIndex);
+                            int.TryParse(obj["BusType"]?.ToString(), out var busType);
+                            int.TryParse(obj["MediaType"]?.ToString(), out var mediaType);
+                            double sizeBytes = 0;
+                            if (double.TryParse(obj["Size"]?.ToString(), out var sb)) sizeBytes = sb;
+                            double sizeGb = Math.Round(sizeBytes / (1024.0 * 1024.0 * 1024.0), 1);
+                            string loc = (obj["PhysicalLocation"]?.ToString() ?? "").Trim();
+
+                            bool isNvme = busType == 17 || name.Contains("NVMe", StringComparison.OrdinalIgnoreCase) ||
+                                          name.Contains("MTFDK", StringComparison.OrdinalIgnoreCase) ||
+                                          name.Contains("MZAL", StringComparison.OrdinalIgnoreCase);
+                            bool isHdd = mediaType == 3 || name.Contains("HDD", StringComparison.OrdinalIgnoreCase);
+
+                            string busName = isNvme ? "NVMe M.2 PCIe" : (isHdd ? "SATA III (HDD)" : "SATA III (SSD)");
+                            string slotTitle = count == 0 ? "Slot 1 (M.2 NVMe Primary)" : $"Slot {count + 1} (M.2 NVMe Secondary)";
+                            if (isHdd) slotTitle = $"Slot {count + 1} (SATA 2.5\"/3.5\" Bay)";
+                            else if (!isNvme) slotTitle = $"Slot {count + 1} (SATA SSD)";
+
+                            var assigned = diskToLetters.TryGetValue(diskIndex, out var letters)
+                                ? string.Join(", ", letters)
+                                : "";
+
+                            storage.PhysicalDrives.Add(new PhysicalDriveInfo
+                            {
+                                Index = diskIndex,
+                                SlotName = slotTitle,
+                                Model = name,
+                                InterfaceType = busName,
+                                BusType = isNvme ? "NVMe PCIe" : (isHdd ? "SATA HDD" : "SATA SSD"),
+                                SizeGb = sizeGb > 0 ? sizeGb : 512.0,
+                                MediaType = isHdd ? "Mechanical HDD" : "Solid State Drive (SSD)",
+                                IsRotationalHdd = isHdd,
+                                PhysicalLocation = string.IsNullOrEmpty(loc) ? $"Disk {diskIndex}" : loc,
+                                HealthStatus = "100% Sehat (Good Condition)",
+                                AssignedLetters = assigned,
+                                FormFactor = isNvme ? "M.2 2280" : (isHdd ? "2.5\"/3.5\" Bay" : "2.5\" SATA"),
+                                IsPrimary = assigned.Contains("C", StringComparison.OrdinalIgnoreCase) || count == 0
+                            });
+                            count++;
+                        }
+                    }
+                    catch { }
+
+                    // Fallback to Win32_DiskDrive if MSFT_PhysicalDisk didn't provide entries
+                    if (storage.PhysicalDrives.Count == 0)
+                    {
+                        try
+                        {
+                            using var searcher = new System.Management.ManagementObjectSearcher(
+                                "SELECT Index, Model, InterfaceType, MediaType, Size FROM Win32_DiskDrive");
+                            foreach (System.Management.ManagementObject obj in searcher.Get())
+                            {
+                                string model = (obj["Model"]?.ToString() ?? "").Trim();
+                                if (string.IsNullOrEmpty(model)) continue;
+
+                                int.TryParse(obj["Index"]?.ToString(), out var idx);
+                                string iface = (obj["InterfaceType"]?.ToString() ?? "").Trim();
+                                string media = (obj["MediaType"]?.ToString() ?? "").Trim();
+                                double sizeBytes = 0;
+                                if (double.TryParse(obj["Size"]?.ToString(), out var sb)) sizeBytes = sb;
+                                double sizeGb = Math.Round(sizeBytes / (1024.0 * 1024.0 * 1024.0), 1);
+
                                 bool isNvme = model.Contains("NVMe", StringComparison.OrdinalIgnoreCase) ||
                                               model.Contains("MTFDK", StringComparison.OrdinalIgnoreCase) ||
                                               model.Contains("MZAL", StringComparison.OrdinalIgnoreCase) ||
@@ -696,41 +852,93 @@ namespace SharedCore.Services
                                              model.Contains("HDD", StringComparison.OrdinalIgnoreCase) ||
                                              model.Contains("Barracuda", StringComparison.OrdinalIgnoreCase);
 
-                                storage.IsRotationalHdd = isHdd;
-                                if (isHdd)
+                                string busName = isNvme ? "NVMe M.2 PCIe" : (isHdd ? "SATA III (HDD)" : "SATA III (SSD)");
+                                string slotTitle = idx == 0 ? "Slot 1 (M.2 NVMe Primary)" : $"Slot {idx + 1} (M.2 / SATA Secondary)";
+                                if (isHdd) slotTitle = $"Slot {idx + 1} (SATA Bay)";
+
+                                var assigned = diskToLetters.TryGetValue(idx, out var letters)
+                                    ? string.Join(", ", letters)
+                                    : "";
+
+                                storage.PhysicalDrives.Add(new PhysicalDriveInfo
                                 {
-                                    storage.InterfaceType = "SATA III (Mechanical HDD / 7200 RPM)";
-                                    storage.TrimStatus = "Tidak Berlaku (Mechanical HDD)";
-                                    storage.SequentialReadMb = 135.0;
-                                    storage.SequentialWriteMb = 118.0;
-                                }
-                                else if (isNvme)
-                                {
-                                    storage.InterfaceType = "NVMe M.2 PCIe Gen 3.0 / 4.0";
-                                    storage.SequentialReadMb = 3500.0;
-                                    storage.SequentialWriteMb = 3000.0;
-                                    storage.TrimStatus = "Didukung & Aktif (TRIM Enabled)";
-                                }
-                                else
-                                {
-                                    storage.InterfaceType = "SATA III Solid State Drive";
-                                    storage.SequentialReadMb = 540.0;
-                                    storage.SequentialWriteMb = 490.0;
-                                    storage.TrimStatus = "Didukung & Aktif (TRIM Enabled)";
-                                }
-                                break;
+                                    Index = idx,
+                                    SlotName = slotTitle,
+                                    Model = model,
+                                    InterfaceType = busName,
+                                    BusType = isNvme ? "NVMe PCIe" : (isHdd ? "SATA HDD" : "SATA SSD"),
+                                    SizeGb = sizeGb > 0 ? sizeGb : 512.0,
+                                    MediaType = isHdd ? "Mechanical HDD" : "Solid State Drive (SSD)",
+                                    IsRotationalHdd = isHdd,
+                                    PhysicalLocation = $"Disk {idx}",
+                                    HealthStatus = "100% Sehat (Good Condition)",
+                                    AssignedLetters = assigned,
+                                    FormFactor = isNvme ? "M.2 2280" : (isHdd ? "2.5\"/3.5\" Bay" : "2.5\" SATA"),
+                                    IsPrimary = assigned.Contains("C", StringComparison.OrdinalIgnoreCase) || idx == 0
+                                });
                             }
                         }
+                        catch { }
                     }
-                    catch { }
                 }
             }
             catch { }
 
-            // Dynamic Cross-Device Storage Analysis via Engine
+            // 3. Aggregate metrics from detected physical drives
+            storage.DriveCount = storage.PhysicalDrives.Count;
+            if (storage.PhysicalDrives.Count > 0)
+            {
+                bool allNvme = storage.PhysicalDrives.All(d => d.BusType.Contains("NVMe", StringComparison.OrdinalIgnoreCase));
+                bool anyNvme = storage.PhysicalDrives.Any(d => d.BusType.Contains("NVMe", StringComparison.OrdinalIgnoreCase));
+                bool allHdd = storage.PhysicalDrives.All(d => d.IsRotationalHdd);
+                bool anyHdd = storage.PhysicalDrives.Any(d => d.IsRotationalHdd);
+
+                storage.IsRotationalHdd = allHdd;
+
+                if (storage.PhysicalDrives.Count == 1)
+                {
+                    var d = storage.PhysicalDrives[0];
+                    storage.DiskModel = d.Model;
+                    storage.InterfaceType = d.InterfaceType;
+                    storage.SlotsSummary = $"1 Slot Terisi ({d.SizeGb:F0} GB {d.BusType})";
+                    storage.PrimaryDriveSummary = $"{d.SlotName}: {d.Model} ({d.SizeGb:F0} GB)";
+                    storage.SecondaryDriveSummary = "Slot 2 (M.2 / SATA): Tersedia / Siap Ekspansi";
+                }
+                else
+                {
+                    storage.DiskModel = string.Join(" + ", storage.PhysicalDrives.Select(d => $"{d.Model} ({d.SizeGb:F0} GB)"));
+                    storage.InterfaceType = allNvme
+                        ? "Dual NVMe M.2 PCIe Gen 3.0 / 4.0"
+                        : (anyNvme ? "Hybrid NVMe PCIe + SATA" : (anyHdd ? "Dual Drive (SSD + HDD)" : "Dual SATA SSD"));
+                    storage.SlotsSummary = $"{storage.PhysicalDrives.Count} Slot Terisi ({string.Join(" + ", storage.PhysicalDrives.Select(d => $"{d.SizeGb:F0} GB {d.BusType}"))})";
+                    storage.PrimaryDriveSummary = $"{storage.PhysicalDrives[0].SlotName}: {storage.PhysicalDrives[0].Model} ({storage.PhysicalDrives[0].SizeGb:F0} GB)";
+                    storage.SecondaryDriveSummary = $"{storage.PhysicalDrives[1].SlotName}: {storage.PhysicalDrives[1].Model} ({storage.PhysicalDrives[1].SizeGb:F0} GB)";
+                }
+
+                if (storage.IsRotationalHdd)
+                {
+                    storage.TrimStatus = "Tidak Berlaku (Mechanical HDD)";
+                    storage.SequentialReadMb = 135.0;
+                    storage.SequentialWriteMb = 118.0;
+                }
+                else if (anyNvme)
+                {
+                    storage.TrimStatus = "Didukung & Aktif (TRIM Enabled)";
+                    storage.SequentialReadMb = 3500.0;
+                    storage.SequentialWriteMb = 3000.0;
+                }
+                else
+                {
+                    storage.TrimStatus = "Didukung & Aktif (TRIM Enabled)";
+                    storage.SequentialReadMb = 540.0;
+                    storage.SequentialWriteMb = 490.0;
+                }
+            }
+
+            // 4. Dynamic Cross-Device Storage Analysis via Intelligence Engine
             bool isNvmeDevice = storage.InterfaceType.Contains("NVMe", StringComparison.OrdinalIgnoreCase);
             var (formFactor, m2Status, sataStatus, rec, feasibility, gain) =
-                HardwareIntelligenceEngine.AnalyzeStorage(storage.DiskModel, storage.IsRotationalHdd, storage.TotalGb, category, isNvmeDevice);
+                HardwareIntelligenceEngine.AnalyzeStorage(storage.DiskModel, storage.IsRotationalHdd, storage.TotalGb, category, isNvmeDevice, storage.DriveCount);
 
             storage.FormFactor = formFactor;
             storage.M2SlotStatus = m2Status;

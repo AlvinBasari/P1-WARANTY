@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Management;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
@@ -14,6 +16,7 @@ namespace SharedCore.Services
         public string StorageDisplay => $"{StorageUsedGb:F1} GB / {StorageTotalGb:F0} GB";
         public string StorageModel { get; set; } = "Hard Disk Drive";
         public bool IsRotationalHdd { get; set; } = true;
+        public int StorageDriveCount { get; set; } = 1;
         public string StorageSummary => $"{StorageModel} ({StorageTotalGb:F0} GB)";
 
         public double MemoryTotalGb { get; set; } = 7.6;
@@ -57,29 +60,43 @@ namespace SharedCore.Services
         {
             var metrics = new SystemMetrics();
 
-            // 1. Storage metrics (real local root / system drive)
+            // 1. Storage metrics (real local root & fixed drives aggregation)
             try
             {
                 DriveInfo[] drives = DriveInfo.GetDrives();
+                double totalBytes = 0;
+                double freeBytes = 0;
+                int readyCount = 0;
+
                 foreach (var d in drives)
                 {
-                    if (d.IsReady && (d.RootDirectory.FullName == "/" || d.RootDirectory.FullName.StartsWith("C", StringComparison.OrdinalIgnoreCase)))
+                    if (d.IsReady && (d.DriveType == DriveType.Fixed || d.RootDirectory.FullName == "/"))
                     {
-                        double totalGb = d.TotalSize / (1024.0 * 1024.0 * 1024.0);
-                        double freeGb = d.AvailableFreeSpace / (1024.0 * 1024.0 * 1024.0);
-                        double usedGb = totalGb - freeGb;
-                        int percent = (int)Math.Round((usedGb / totalGb) * 100);
-
-                        metrics.StorageTotalGb = totalGb;
-                        metrics.StorageUsedGb = usedGb;
-                        metrics.StoragePercentUsed = Math.Clamp(percent, 1, 99);
-                        break;
+                        totalBytes += d.TotalSize;
+                        freeBytes += d.AvailableFreeSpace;
+                        readyCount++;
                     }
                 }
 
-                // Detect real storage model & HDD vs SSD
+                if (readyCount > 0 && totalBytes > 0)
+                {
+                    double totalGb = totalBytes / (1024.0 * 1024.0 * 1024.0);
+                    double freeGb = freeBytes / (1024.0 * 1024.0 * 1024.0);
+                    double usedGb = totalGb - freeGb;
+                    int percent = (int)Math.Round((usedGb / totalGb) * 100);
+
+                    metrics.StorageTotalGb = Math.Round(totalGb, 1);
+                    metrics.StorageUsedGb = Math.Round(usedGb, 1);
+                    metrics.StoragePercentUsed = Math.Clamp(percent, 1, 99);
+                }
+
+                // Detect real storage physical disks (all slots)
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && Directory.Exists("/sys/block"))
                 {
+                    var linuxModels = new List<string>();
+                    bool anyHdd = false;
+                    bool anyNvme = false;
+
                     foreach (var devPath in Directory.GetDirectories("/sys/block"))
                     {
                         string devName = Path.GetFileName(devPath);
@@ -87,18 +104,36 @@ namespace SharedCore.Services
                             continue;
 
                         string modelFile = Path.Combine(devPath, "device", "model");
+                        string vendorFile = Path.Combine(devPath, "device", "vendor");
                         string rotaFile = Path.Combine(devPath, "queue", "rotational");
 
                         string modelStr = File.Exists(modelFile) ? File.ReadAllText(modelFile).Trim() : "";
+                        string vendorStr = File.Exists(vendorFile) ? File.ReadAllText(vendorFile).Trim() : "";
+                        string fullDiskName = string.IsNullOrEmpty(vendorStr) ? modelStr : $"{vendorStr} {modelStr}".Trim();
+                        if (string.IsNullOrWhiteSpace(fullDiskName)) fullDiskName = devName;
+
                         bool isRota = true;
                         if (File.Exists(rotaFile) && int.TryParse(File.ReadAllText(rotaFile).Trim(), out var rotaVal))
                             isRota = (rotaVal == 1);
 
-                        metrics.IsRotationalHdd = isRota;
-                        if (!string.IsNullOrEmpty(modelStr))
+                        if (isRota) anyHdd = true;
+                        if (devName.StartsWith("nvme")) anyNvme = true;
+
+                        linuxModels.Add(fullDiskName);
+                    }
+
+                    if (linuxModels.Count > 0)
+                    {
+                        metrics.IsRotationalHdd = anyHdd && !anyNvme && linuxModels.Count == 1;
+                        metrics.StorageDriveCount = linuxModels.Count;
+                        if (linuxModels.Count == 1)
                         {
-                            metrics.StorageModel = isRota ? $"{modelStr} (HDD)" : (devName.StartsWith("nvme") ? $"{modelStr} (NVMe SSD)" : $"{modelStr} (SSD)");
-                            break;
+                            string typeLabel = metrics.IsRotationalHdd ? "HDD" : (anyNvme ? "NVMe SSD" : "SSD");
+                            metrics.StorageModel = $"{linuxModels[0]} ({typeLabel})";
+                        }
+                        else
+                        {
+                            metrics.StorageModel = $"{linuxModels.Count}x Drive ({string.Join(" + ", linuxModels)})";
                         }
                     }
                 }
@@ -106,27 +141,66 @@ namespace SharedCore.Services
                 {
                     try
                     {
-                        using var searcher = new System.Management.ManagementObjectSearcher(
-                            "SELECT Model, InterfaceType, MediaType FROM Win32_DiskDrive");
-                        foreach (System.Management.ManagementObject obj in searcher.Get())
+                        var winModels = new List<string>();
+                        bool anyHdd = false;
+                        bool anyNvme = false;
+
+                        // Try MSFT_PhysicalDisk first for precise hardware bus type
+                        try
                         {
-                            string model = (obj["Model"]?.ToString() ?? "").Trim();
-                            string iface = (obj["InterfaceType"]?.ToString() ?? "").Trim();
-                            string media = (obj["MediaType"]?.ToString() ?? "").Trim();
-
-                            if (!string.IsNullOrEmpty(model))
+                            using var msftSearcher = new System.Management.ManagementObjectSearcher(
+                                @"root\Microsoft\Windows\Storage",
+                                "SELECT FriendlyName, MediaType, BusType FROM MSFT_PhysicalDisk");
+                            foreach (System.Management.ManagementObject obj in msftSearcher.Get())
                             {
-                                bool isNvme = model.Contains("NVMe", StringComparison.OrdinalIgnoreCase) ||
-                                              model.Contains("MTFDK", StringComparison.OrdinalIgnoreCase) ||
-                                              model.Contains("MZAL", StringComparison.OrdinalIgnoreCase) ||
-                                              iface.Equals("SCSI", StringComparison.OrdinalIgnoreCase);
+                                string name = (obj["FriendlyName"]?.ToString() ?? "").Trim();
+                                if (!string.IsNullOrEmpty(name))
+                                {
+                                    winModels.Add(name);
+                                    if (int.TryParse(obj["BusType"]?.ToString(), out var bus) && bus == 17) anyNvme = true;
+                                    if (int.TryParse(obj["MediaType"]?.ToString(), out var mType) && mType == 3) anyHdd = true;
+                                }
+                            }
+                        }
+                        catch { }
 
-                                bool isHdd = media.Contains("Rotational", StringComparison.OrdinalIgnoreCase) ||
-                                             model.Contains("HDD", StringComparison.OrdinalIgnoreCase);
+                        if (winModels.Count == 0)
+                        {
+                            using var searcher = new System.Management.ManagementObjectSearcher(
+                                "SELECT Model, InterfaceType, MediaType FROM Win32_DiskDrive");
+                            foreach (System.Management.ManagementObject obj in searcher.Get())
+                            {
+                                string model = (obj["Model"]?.ToString() ?? "").Trim();
+                                string iface = (obj["InterfaceType"]?.ToString() ?? "").Trim();
+                                string media = (obj["MediaType"]?.ToString() ?? "").Trim();
 
-                                metrics.IsRotationalHdd = isHdd;
-                                metrics.StorageModel = isHdd ? $"{model} (HDD)" : (isNvme ? $"{model} (NVMe SSD)" : $"{model} (SSD)");
-                                break;
+                                if (!string.IsNullOrEmpty(model))
+                                {
+                                    winModels.Add(model);
+                                    if (model.Contains("NVMe", StringComparison.OrdinalIgnoreCase) ||
+                                        model.Contains("MTFDK", StringComparison.OrdinalIgnoreCase) ||
+                                        model.Contains("MZAL", StringComparison.OrdinalIgnoreCase) ||
+                                        iface.Equals("SCSI", StringComparison.OrdinalIgnoreCase))
+                                        anyNvme = true;
+                                    if (media.Contains("Rotational", StringComparison.OrdinalIgnoreCase) ||
+                                        model.Contains("HDD", StringComparison.OrdinalIgnoreCase))
+                                        anyHdd = true;
+                                }
+                            }
+                        }
+
+                        if (winModels.Count > 0)
+                        {
+                            metrics.IsRotationalHdd = anyHdd && !anyNvme && winModels.Count == 1;
+                            metrics.StorageDriveCount = winModels.Count;
+                            if (winModels.Count == 1)
+                            {
+                                string typeLabel = metrics.IsRotationalHdd ? "HDD" : (anyNvme ? "NVMe SSD" : "SSD");
+                                metrics.StorageModel = $"{winModels[0]} ({typeLabel})";
+                            }
+                            else
+                            {
+                                metrics.StorageModel = $"{winModels.Count}x Drive ({string.Join(" + ", winModels)})";
                             }
                         }
                     }

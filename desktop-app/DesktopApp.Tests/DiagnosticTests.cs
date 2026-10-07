@@ -202,6 +202,9 @@ namespace DesktopApp.Tests
 
             Assert.True(storage.TotalGb > 0);
             Assert.False(string.IsNullOrWhiteSpace(storage.FileSystem));
+            Assert.True(storage.PhysicalDrives.Count > 0);
+            Assert.True(storage.Partitions.Count > 0);
+            Assert.False(string.IsNullOrWhiteSpace(storage.SlotsSummary));
 
             Assert.False(string.IsNullOrWhiteSpace(mb.ProductModel));
             Assert.False(string.IsNullOrWhiteSpace(mb.WhitelistSignature));
@@ -224,6 +227,11 @@ namespace DesktopApp.Tests
 
             var laptopStorage = HardwareIntelligenceEngine.AnalyzeStorage("SAMSUNG MZVL2512HCJQ-00B00 (512 GB)", isRotationalHdd: false, totalGb: 512.0, laptopCat);
             Assert.Contains("NVMe", laptopStorage.FormFactor);
+
+            var dualNvmeStorage = HardwareIntelligenceEngine.AnalyzeStorage("Micron MTFDKCD512TGE + SAMSUNG MZAL4512HBLU", isRotationalHdd: false, totalGb: 1024.0, laptopCat, isNvmeExplicit: true, driveCount: 2);
+            Assert.Contains("Dual", dualNvmeStorage.FormFactor);
+            Assert.Contains("2x Slot", dualNvmeStorage.M2Status);
+            Assert.Contains("Dual NVMe", dualNvmeStorage.Recommendation);
 
             var laptopMb = HardwareIntelligenceEngine.AnalyzeMotherboard("ASUSTeK", "X415EA", laptopCat);
             Assert.Contains("Baterai", laptopMb.PowerSupply);

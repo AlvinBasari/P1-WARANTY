@@ -119,8 +119,9 @@ namespace CustomerApp.ViewModels
                        $"• Processor (CPU)   : {CpuInfo.ModelName} ({CpuInfo.Cores} Cores, {CpuInfo.Threads} Threads, {CpuInfo.Architecture})\n" +
                        $"• Base Clock / Max  : {CpuInfo.BaseClock} / {CpuInfo.CurrentClock}\n" +
                        $"• Memori (RAM)      : {MemoryInfo.TotalGb:F1} GB {MemoryInfo.MemoryType} ({MemoryInfo.ChannelMode})\n" +
-                       $"• Konfigurasi Slot  : {MemoryInfo.SlotsSummary}\n" +
+                       $"• Konfigurasi RAM   : {MemoryInfo.SlotsSummary}\n" +
                        $"• Media Simpan      : {StorageInfo.DiskModel} ({StorageInfo.TotalGb:F0} GB {StorageInfo.InterfaceType})\n" +
+                       $"• Konfigurasi Slot  : {StorageInfo.SlotsSummary}\n" +
                        $"• Partisi / Health  : {StorageInfo.MountPoint} / {StorageInfo.SmartStatus}\n" +
                        $"• Tanggal Cek       : {DateTime.Now:dd MMM yyyy HH:mm} WIB\n" +
                        $"• Layanan Support   : PT Jaya Teknologi Solusi (Hotline CS: 0812-3456-7890)";
@@ -161,8 +162,9 @@ namespace CustomerApp.ViewModels
                          $"• Rekomendasi Upgrade: {MemoryInfo.UpgradeRecommendation}",
 
                 "Storage" => $"[SPESIFIKASI PENYIMPANAN STORAGE - PT JTS]\n" +
+                             $"• Konfigurasi Slot: {StorageInfo.SlotsSummary}\n" +
                              $"• Model Drive: {StorageInfo.DiskModel}\n" +
-                             $"• Kapasitas Total: {StorageInfo.TotalGb:F0} GB (Terpakai: {StorageInfo.UsedGb:F0} GB)\n" +
+                             $"• Kapasitas Total: {StorageInfo.TotalGb:F0} GB (Terpakai: {StorageInfo.UsedGb:F0} GB, Bebas: {StorageInfo.FreeGb:F0} GB)\n" +
                              $"• Interface: {StorageInfo.InterfaceType} ({StorageInfo.FormFactor})\n" +
                              $"• Partisi & Format: {StorageInfo.MountPoint} ({StorageInfo.FileSystem})\n" +
                              $"• Kesehatan S.M.A.R.T: {StorageInfo.SmartStatus}\n" +
