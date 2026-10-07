@@ -270,7 +270,7 @@
                     </Border>
 
                     <Button Command="{Binding RefreshCommand}"
-                            Background="{DynamicResource VantageCardBrush}" Foreground="White"
+                            Background="{DynamicResource VantageCardBrush}" Foreground="{DynamicResource VantageTextBrush}"
                             BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
                             HorizontalAlignment="Center" Padding="18,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold">
                         <StackPanel Orientation="Horizontal" Spacing="8">

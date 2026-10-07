@@ -13,7 +13,7 @@
                         BorderThickness="1" CornerRadius="8" Padding="14,10" HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <PathIcon Data="{StaticResource IconCheck}" Foreground="{DynamicResource VantageAccentBrush}" Width="14" Height="14" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding CopyToast}" Foreground="White" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding CopyToast}" Foreground="{DynamicResource VantageTextBrush}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
                     </StackPanel>
                 </Border>
 
@@ -25,7 +25,7 @@
                         <PathIcon Grid.Column="0" Grid.Row="0" Data="{StaticResource IconAlert}" Foreground="{DynamicResource VantageAmberBrush}"
                                   Width="24" Height="24" Margin="0,2,16,0" VerticalAlignment="Top" />
                         <StackPanel Grid.Column="1" Grid.Row="0" Spacing="4">
-                            <TextBlock Text="Perangkat Komputer Ini Belum Terdaftar dalam Database PT JTS" FontSize="15" FontWeight="Bold" Foreground="White" />
+                            <TextBlock Text="Perangkat Komputer Ini Belum Terdaftar dalam Database PT JTS" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" />
                             <TextBlock Text="Unit ini belum terhubung dengan garansi resmi. Jika Anda membeli unit ini dari PT Jaya Teknologi Solusi, silakan masukkan Serial Number atau Token QR dari stiker fisik yang ditempel pada casing unit."
                                        FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" LineHeight="18" />
                         </StackPanel>

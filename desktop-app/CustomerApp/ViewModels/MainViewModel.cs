@@ -152,6 +152,11 @@ namespace CustomerApp.ViewModels
                 _themeSettingsService.SaveTheme(isDark ? "Dark" : "Light");
             }
 
+            if (ClaimVm?.IsRequestSubmitted == true)
+            {
+                ClaimVm.UpdateTimelineSteps();
+            }
+
             OnPropertyChanged(nameof(ActiveTab));
         }
 

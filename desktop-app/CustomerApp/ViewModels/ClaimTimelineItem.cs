@@ -36,9 +36,24 @@ namespace CustomerApp.ViewModels
         public bool IsActive => StatusState == "active";
         public bool IsPending => StatusState == "pending";
 
-        public string BorderColorHex => IsCompleted ? "#22C55E" : (IsActive ? "#F59E0B" : "#252D3F");
-        public string BackgroundColorHex => IsCompleted ? "#132E22" : (IsActive ? "#332411" : "#10141D");
-        public string TextColorHex => IsCompleted ? "#22C55E" : (IsActive ? "#F59E0B" : "#8C9BAE");
-        public string BadgeBgHex => IsCompleted ? "#1D4A32" : (IsActive ? "#4A3419" : "#1C2333");
+        private static bool IsLightMode =>
+            Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light
+            || Avalonia.Application.Current?.RequestedThemeVariant == Avalonia.Styling.ThemeVariant.Light;
+
+        public string BorderColorHex => IsCompleted
+            ? "#22C55E"
+            : (IsActive ? "#F59E0B" : (IsLightMode ? "#CBD5E1" : "#252D3F"));
+
+        public string BackgroundColorHex => IsCompleted
+            ? (IsLightMode ? "#DCFCE7" : "#132E22")
+            : (IsActive ? (IsLightMode ? "#FEF3C7" : "#332411") : (IsLightMode ? "#F1F5F9" : "#10141D"));
+
+        public string TextColorHex => IsCompleted
+            ? (IsLightMode ? "#15803D" : "#22C55E")
+            : (IsActive ? (IsLightMode ? "#B45309" : "#F59E0B") : (IsLightMode ? "#475569" : "#8C9BAE"));
+
+        public string BadgeBgHex => IsCompleted
+            ? (IsLightMode ? "#DCFCE7" : "#1D4A32")
+            : (IsActive ? (IsLightMode ? "#FEF3C7" : "#4A3419") : (IsLightMode ? "#E2E8F0" : "#1C2333"));
     }
 }

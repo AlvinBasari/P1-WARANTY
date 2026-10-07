@@ -90,6 +90,7 @@
                     <SolidColorBrush x:Key="VantageFaultBrush" Color="#EF4444" />
                     <SolidColorBrush x:Key="VantageFaultSubtleBrush" Color="#450A0A" />
 
+                    <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#64748B" />
                     <SolidColorBrush x:Key="VantageTabActiveBgBrush" Color="#1E293B" />
                     <SolidColorBrush x:Key="VantageTabActiveBorderBrush" Color="#2563EB" />
                     <SolidColorBrush x:Key="VantageTabActiveFgBrush" Color="#3B82F6" />
@@ -116,6 +117,7 @@
                     <SolidColorBrush x:Key="VantageTextBrush" Color="#0F172A" />
                     <SolidColorBrush x:Key="VantageTextMutedBrush" Color="#475569" />
                     <SolidColorBrush x:Key="VantageTextSubtleBrush" Color="#64748B" />
+                    <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#64748B" />
 
                     <SolidColorBrush x:Key="VantageGreenBrush" Color="#059669" />
                     <SolidColorBrush x:Key="VantageGreenSubtleBrush" Color="#D1FAE5" />
@@ -145,6 +147,40 @@
         </Style>
         <Style Selector="TextBox:focus">
             <Setter Property="BorderBrush" Value="{DynamicResource VantageAccentBrush}" />
+        </Style>
+        <Style Selector="TextBox /template/ TextBlock#PART_Watermark">
+            <Setter Property="Foreground" Value="{DynamicResource VantageTextSubtleBrush}" />
+            <Setter Property="Opacity" Value="0.8" />
+        </Style>
+
+        <!-- Modern ComboBox Styles (Theme-Aware) -->
+        <Style Selector="ComboBox">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BorderBrush" Value="{DynamicResource VantageBorderBrush}" />
+            <Setter Property="Background" Value="{DynamicResource VantageInputBgBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource VantageTextBrush}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="12,10" />
+        </Style>
+        <Style Selector="ComboBox:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource VantageAccentHoverBrush}" />
+        </Style>
+        <Style Selector="ComboBox:focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource VantageAccentBrush}" />
+        </Style>
+        <Style Selector="ComboBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource VantageTextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="ComboBoxItem:pointerover">
+            <Setter Property="Background" Value="{DynamicResource VantageCardHoverBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource VantageTextBrush}" />
+        </Style>
+        <Style Selector="ComboBoxItem:selected">
+            <Setter Property="Background" Value="{DynamicResource VantageAccentSubtleBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource VantageAccentBrush}" />
         </Style>
 
         <Style Selector="Button">

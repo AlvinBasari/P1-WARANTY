@@ -42,13 +42,13 @@
                             CornerRadius="10"
                             Padding="16,12">
                         <Grid ColumnDefinitions="Auto,*">
-                            <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Background="#4A3419" Margin="0,0,14,0" VerticalAlignment="Center">
+                            <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Background="{DynamicResource VantageCardBrush}" Margin="0,0,14,0" VerticalAlignment="Center">
                                 <PathIcon Data="{StaticResource IconAlert}" Width="16" Height="16" Foreground="{DynamicResource VantageAmberBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <TextBlock Text="PERHATIAN: MASA GARANSI PERANGKAT TELAH BERAKHIR" FontSize="11" FontWeight="Bold" FontFamily="Consolas,Monospace" Foreground="{DynamicResource VantageAmberBrush}"/>
-                                    <Border Background="#6B4505" CornerRadius="4" Padding="6,1">
+                                    <Border Background="{DynamicResource VantageAmberBrush}" CornerRadius="4" Padding="6,1">
                                         <TextBlock Text="{Binding DeviceWarrantyExpiryText, StringFormat='Status: {0}'}" FontSize="9" FontWeight="Bold" Foreground="White"/>
                                     </Border>
                                 </StackPanel>
@@ -164,20 +164,26 @@
                                     <ComboBox ItemsSource="{Binding AvailableScheduleSlots}"
                                               SelectedItem="{Binding SelectedScheduleSlot}"
                                               HorizontalAlignment="Stretch"
-                                              Background="{DynamicResource VantageBgBrush}"
-                                              Foreground="White"
+                                              Background="{DynamicResource VantageInputBgBrush}"
+                                              Foreground="{DynamicResource VantageTextBrush}"
                                               BorderBrush="{DynamicResource VantageBorderBrush}"
                                               CornerRadius="8"
                                               FontSize="13"
-                                              Padding="12,10" />
+                                              Padding="12,10">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" Foreground="{DynamicResource VantageTextBrush}" FontSize="13" VerticalAlignment="Center"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="6">
                                     <TextBlock Text="Catatan Tambahan Jadwal (Opsional)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextMutedBrush}" />
                                     <TextBox Text="{Binding ScheduleNotes, Mode=TwoWay}"
                                              Watermark="Contoh: Tolong hubungi WhatsApp sebelum koneksi..."
-                                             Background="{DynamicResource VantageBgBrush}"
-                                             Foreground="White"
+                                             Background="{DynamicResource VantageInputBgBrush}"
+                                             Foreground="{DynamicResource VantageTextBrush}"
                                              BorderBrush="{DynamicResource VantageBorderBrush}"
                                              FontSize="13"
                                              Padding="12,10"
@@ -280,7 +286,7 @@
                     <Border IsVisible="{Binding IsRemoteWaitingAcceptance}"
                             Background="{DynamicResource VantageAmberSubtleBrush}" BorderBrush="{DynamicResource VantageAmberBrush}" BorderThickness="1.5" CornerRadius="12" Padding="20">
                         <Grid ColumnDefinitions="Auto,*">
-                            <Border Grid.Column="0" Width="46" Height="46" Background="#4A3419" CornerRadius="10" Margin="0,0,16,0">
+                            <Border Grid.Column="0" Width="46" Height="46" Background="{DynamicResource VantageCardBrush}" CornerRadius="10" Margin="0,0,16,0">
                                 <PathIcon Data="{StaticResource IconHourglass}" Width="22" Height="22" Foreground="{DynamicResource VantageAmberBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" Spacing="4">
@@ -295,7 +301,7 @@
                     <Border IsVisible="{Binding IsRemoteScheduled}"
                             Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1.5" CornerRadius="12" Padding="20">
                         <Grid ColumnDefinitions="Auto,*">
-                            <Border Grid.Column="0" Width="46" Height="46" Background="#1D4A32" CornerRadius="10" Margin="0,0,16,0">
+                            <Border Grid.Column="0" Width="46" Height="46" Background="{DynamicResource VantageCardBrush}" CornerRadius="10" Margin="0,0,16,0">
                                 <PathIcon Data="{StaticResource IconCheckCircle}" Width="22" Height="22" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" Spacing="4">
@@ -310,7 +316,7 @@
                     <Border IsVisible="{Binding IsRemoteCompleted}"
                             Background="{DynamicResource VantageGreenSubtleBrush}" BorderBrush="{DynamicResource VantageGreenBrush}" BorderThickness="1.5" CornerRadius="12" Padding="20">
                         <Grid ColumnDefinitions="Auto,*">
-                            <Border Grid.Column="0" Width="46" Height="46" Background="#1D4A32" CornerRadius="10" Margin="0,0,16,0">
+                            <Border Grid.Column="0" Width="46" Height="46" Background="{DynamicResource VantageCardBrush}" CornerRadius="10" Margin="0,0,16,0">
                                 <PathIcon Data="{StaticResource IconCheckCircle}" Width="22" Height="22" Foreground="{DynamicResource VantageGreenBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" Spacing="4">
@@ -325,7 +331,7 @@
                     <Border IsVisible="{Binding IsEscalatedToWorkshop}"
                             Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1.5" CornerRadius="12" Padding="20">
                         <Grid ColumnDefinitions="Auto,*">
-                            <Border Grid.Column="0" Width="46" Height="46" Background="#183E48" CornerRadius="10" Margin="0,0,16,0">
+                            <Border Grid.Column="0" Width="46" Height="46" Background="{DynamicResource VantageCardBrush}" CornerRadius="10" Margin="0,0,16,0">
                                 <PathIcon Data="{StaticResource IconLocation}" Width="22" Height="22" Foreground="{DynamicResource VantageAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" Spacing="4">
@@ -340,7 +346,7 @@
                     <Border IsVisible="{Binding IsRejected}"
                             Background="{DynamicResource VantageFaultSubtleBrush}" BorderBrush="{DynamicResource VantageFaultBrush}" BorderThickness="1.5" CornerRadius="12" Padding="20">
                         <Grid ColumnDefinitions="Auto,*">
-                            <Border Grid.Column="0" Width="46" Height="46" Background="#3D1414" CornerRadius="10" Margin="0,0,16,0">
+                            <Border Grid.Column="0" Width="46" Height="46" Background="{DynamicResource VantageCardBrush}" CornerRadius="10" Margin="0,0,16,0">
                                 <PathIcon Data="{StaticResource IconAlert}" Width="22" Height="22" Foreground="{DynamicResource VantageFaultBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" Spacing="4">
@@ -355,7 +361,7 @@
                     <Border IsVisible="{Binding IsPhysicalDamage}"
                             Background="{DynamicResource VantageAccentSubtleBrush}" BorderBrush="{DynamicResource VantageAccentBrush}" BorderThickness="1.5" CornerRadius="12" Padding="20">
                         <Grid ColumnDefinitions="Auto,*">
-                            <Border Grid.Column="0" Width="46" Height="46" Background="#183E48" CornerRadius="10" Margin="0,0,16,0">
+                            <Border Grid.Column="0" Width="46" Height="46" Background="{DynamicResource VantageCardBrush}" CornerRadius="10" Margin="0,0,16,0">
                                 <PathIcon Data="{StaticResource IconLocation}" Width="22" Height="22" Foreground="{DynamicResource VantageAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel Grid.Column="1" Spacing="4">
@@ -698,7 +704,7 @@
                         <Button Grid.Column="0" Command="{Binding CheckScheduleStatusCommand}"
                                 IsEnabled="{Binding !IsCheckingStatus}"
                                 Background="{DynamicResource VantageCardBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
-                                Foreground="White" Margin="0,0,6,0" Padding="12,10" CornerRadius="8"
+                                Foreground="{DynamicResource VantageTextBrush}" Margin="0,0,6,0" Padding="12,10" CornerRadius="8"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontSize="12">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <PathIcon Data="{StaticResource IconRefresh}" Width="13" Height="13" Foreground="{DynamicResource VantageAccentLightBrush}" />
