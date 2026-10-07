@@ -79,9 +79,18 @@ namespace CustomerApp.ViewModels
         [ObservableProperty]
         private ObservableCollection<SparePartItem> _replacedParts = new();
 
-        public TrackingViewModel(ApiClient apiClient)
+        private readonly Action<string>? _navigateToTab;
+
+        public TrackingViewModel(ApiClient apiClient, Action<string>? navigateToTab = null)
         {
             _apiClient = apiClient;
+            _navigateToTab = navigateToTab;
+        }
+
+        [RelayCommand]
+        public void NavigateToClaim()
+        {
+            _navigateToTab?.Invoke("Claim");
         }
 
         private bool _isPollingActive;

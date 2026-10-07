@@ -281,5 +281,10 @@
             <!-- Main Content Container -->
             <ContentControl Grid.Row="1" Content="{Binding CurrentView}" />
         </Grid>
+
+        <!-- Top-level Modal Overlay: Confirmation & Warning Dialog -->
+        <Panel Grid.ColumnSpan="2" IsVisible="{Binding IsConfirmDialogOpen}">
+            <views:ConfirmDialog DataContext="{Binding ConfirmDialogViewModel}"/>
+        </Panel>
     </Grid>
 </Window>

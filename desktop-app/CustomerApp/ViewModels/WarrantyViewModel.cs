@@ -131,6 +131,14 @@ namespace CustomerApp.ViewModels
         [ObservableProperty]
         private string? _copyToast;
 
+        public string DisplayModel => !string.IsNullOrWhiteSpace(Device?.Model) ? Device.Model : (!string.IsNullOrWhiteSpace(LocalModel) ? LocalModel : "Unit Hardware");
+        public string DisplaySerialNumber => !string.IsNullOrWhiteSpace(Device?.SerialNumber) ? Device.SerialNumber : (!string.IsNullOrWhiteSpace(LocalSerial) ? LocalSerial : "-");
+        public string DisplayHardwareId => !string.IsNullOrWhiteSpace(Device?.HardwareId) ? Device.HardwareId : (!string.IsNullOrWhiteSpace(LocalHardwareId) ? LocalHardwareId : "-");
+
+        partial void OnLocalModelChanged(string value) => OnPropertyChanged(nameof(DisplayModel));
+        partial void OnLocalSerialChanged(string value) => OnPropertyChanged(nameof(DisplaySerialNumber));
+        partial void OnLocalHardwareIdChanged(string value) => OnPropertyChanged(nameof(DisplayHardwareId));
+
         public WarrantyViewModel(ApiClient apiClient, DeviceDto? device, Action<string> navigate, Action<DeviceDto>? onDeviceUpdated = null)
         {
             _apiClient = apiClient;
@@ -262,6 +270,10 @@ namespace CustomerApp.ViewModels
             {
                 LocationSummary = "Belum diatur (Perlu kalibrasi untuk servis on-site)";
             }
+
+            OnPropertyChanged(nameof(DisplayModel));
+            OnPropertyChanged(nameof(DisplaySerialNumber));
+            OnPropertyChanged(nameof(DisplayHardwareId));
         }
 
         [RelayCommand]
@@ -273,6 +285,8 @@ namespace CustomerApp.ViewModels
         [RelayCommand]
         public async Task ActivateWithTokenAsync()
         {
+            if (IsActivating) return;
+
             if (string.IsNullOrWhiteSpace(ClaimTokenInput) || ClaimTokenInput.Length < 3)
             {
                 ActivationError = "Harap masukkan Token QR atau Serial Number dari stiker fisik unit.";
@@ -465,88 +479,153 @@ namespace CustomerApp.ViewModels
     <meta charset=""UTF-8"">
     <title>Sertifikat Garansi Resmi - PT Jaya Teknologi Solusi</title>
     <style>
-        @page {{ size: A4 portrait; margin: 15mm; }}
-        body {{ font-family: 'Segoe UI', Arial, sans-serif; background: #F8FAFC; color: #0F172A; padding: 24px; margin: 0; }}
-        .cert-card {{ max-width: 820px; margin: 0 auto; background: #FFFFFF; border: 2px solid #2563EB; border-radius: 12px; padding: 36px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }}
-        .header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #E2E8F0; padding-bottom: 18px; }}
-        .brand {{ display: flex; align-items: center; gap: 14px; }}
-        .logo-box {{ background: #2563EB; color: white; padding: 8px 16px; border-radius: 6px; font-weight: 900; font-size: 20px; letter-spacing: 1px; }}
-        .title {{ font-size: 20px; font-weight: bold; margin: 0; color: #0F172A; }}
-        .subtitle {{ color: #64748B; font-size: 13px; margin-top: 3px; }}
-        .status-badge {{ background: #ECFDF5; color: #059669; border: 1.5px solid #10B981; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 13px; }}
-        .main-layout {{ display: grid; grid-template-columns: 1fr 220px; gap: 24px; margin: 28px 0; }}
-        .grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }}
-        .item {{ background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 12px 14px; }}
-        .label {{ font-size: 10px; color: #64748B; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }}
-        .value {{ font-size: 14px; font-weight: bold; color: #0F172A; margin-top: 4px; font-family: Consolas, monospace; }}
-        .qr-box {{ background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 14px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }}
-        .qr-title {{ font-size: 11px; font-weight: bold; color: #0F172A; margin-bottom: 8px; }}
-        .qr-img {{ width: 140px; height: 140px; border-radius: 4px; border: 1px solid #E2E8F0; }}
-        .token-text {{ font-size: 11px; color: #2563EB; font-weight: bold; font-family: Consolas, monospace; margin-top: 6px; }}
-        .footer {{ border-top: 1px solid #E2E8F0; padding-top: 18px; display: flex; justify-content: space-between; align-items: center; color: #64748B; font-size: 12px; }}
-        .seal {{ color: #2563EB; font-weight: bold; font-size: 12px; }}
+        @page {{ size: A4 portrait; margin: 12mm 15mm; }}
+        * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }}
+        body {{ background: #F8FAFC; color: #0F172A; padding: 24px; margin: 0; font-size: 12px; line-height: 1.5; }}
+        .cert-card {{ max-width: 820px; margin: 0 auto; background: #FFFFFF; border: 1.5px solid #0F172A; border-radius: 4px; padding: 32px 36px; box-shadow: 0 4px 16px rgba(15,23,42,0.06); }}
+        
+        /* Kop Surat Resmi */
+        .kop {{ display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0F172A; padding-bottom: 16px; }}
+        .kop-brand {{ display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }}
+        .kop-logo {{ background: #0F172A; color: white; padding: 3px 8px; border-radius: 3px; font-weight: 800; font-size: 13px; font-family: 'Consolas', monospace; }}
+        .kop-company {{ font-size: 17px; font-weight: 800; color: #0F172A; letter-spacing: 0.2px; }}
+        .kop-dept {{ font-size: 10.5px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }}
+        .kop-meta {{ font-size: 10px; color: #64748B; line-height: 1.4; }}
+        
+        .cert-badge-box {{ text-align: right; min-width: 240px; }}
+        .cert-doc-title {{ font-size: 14px; font-weight: 800; color: #0F172A; text-transform: uppercase; letter-spacing: 0.8px; }}
+        .cert-doc-sub {{ font-size: 10px; color: #64748B; font-weight: 600; margin-top: 2px; }}
+        .cert-status {{ display: inline-block; margin-top: 6px; padding: 4px 10px; border: 1.5px solid #0F172A; border-radius: 3px; font-size: 11px; font-weight: 800; background: #F8FAFC; color: #0F172A; }}
+        
+        /* Main Layout Grid */
+        .main-layout {{ display: grid; grid-template-columns: 1fr 210px; gap: 20px; margin: 22px 0; }}
+        .specs-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }}
+        .spec-item {{ background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 3px; overflow: hidden; }}
+        .spec-label {{ background: #F8FAFC; border-bottom: 1px solid #E2E8F0; padding: 5px 10px; font-size: 9.5px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }}
+        .spec-val {{ padding: 8px 10px; font-size: 12.5px; font-weight: 700; color: #0F172A; font-family: 'Consolas', monospace; }}
+        
+        .qr-card {{ background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 3px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }}
+        .qr-header {{ font-size: 9.5px; font-weight: 800; color: #0F172A; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; border-bottom: 1px solid #E2E8F0; width: 100%; padding-bottom: 4px; }}
+        .qr-img {{ width: 130px; height: 130px; border: 1px solid #E2E8F0; border-radius: 2px; }}
+        .qr-token {{ font-size: 11px; color: #0F172A; font-weight: 800; font-family: 'Consolas', monospace; margin-top: 6px; }}
+        .qr-note {{ font-size: 9px; color: #64748B; margin-top: 2px; }}
+        
+        /* Terms */
+        .terms-box {{ background: #F8FAFC; border-left: 3px solid #0F172A; padding: 8px 12px; font-size: 10px; color: #475569; margin-bottom: 20px; line-height: 1.5; }}
+        .terms-box strong {{ color: #0F172A; display: block; margin-bottom: 2px; text-transform: uppercase; font-size: 9.5px; }}
+        
+        /* Signatures */
+        .signatures {{ display: grid; grid-template-columns: 1fr 1fr; gap: 30px; padding-top: 14px; border-top: 1px solid #CBD5E1; margin-bottom: 16px; text-align: center; }}
+        .sig-title {{ font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }}
+        .sig-space {{ height: 60px; display: flex; align-items: center; justify-content: center; }}
+        .sig-stamp {{ border: 1.5px solid #0F172A; padding: 6px 12px; background: #F8FAFC; display: inline-block; font-size: 9px; font-weight: 800; color: #0F172A; }}
+        .sig-name {{ font-size: 11px; font-weight: 700; color: #0F172A; border-top: 1px solid #94A3B8; padding-top: 4px; display: inline-block; min-width: 180px; }}
+        
+        /* Footer */
+        .footer {{ border-top: 1px solid #E2E8F0; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #64748B; }}
+        .footer-seal {{ font-weight: 800; color: #0F172A; text-transform: uppercase; letter-spacing: 0.5px; }}
+        
         .actions {{ text-align: center; margin-top: 24px; }}
-        .print-btn {{ background: #2563EB; color: white; border: none; padding: 10px 24px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; }}
-        @media print {{ .actions {{ display: none; }} body {{ background: white; padding: 0; }} .cert-card {{ border: 1.5px solid #2563EB; box-shadow: none; }} }}
+        .print-btn {{ background: #0F172A; color: white; border: none; padding: 9px 22px; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 0.3px; }}
+        .print-btn:hover {{ background: #334155; }}
+        @media print {{ .actions {{ display: none; }} body {{ background: white; padding: 0; }} .cert-card {{ border: 1.5px solid #0F172A; box-shadow: none; max-width: 100%; }} }}
     </style>
 </head>
 <body>
     <div class=""cert-card"">
-        <div class=""header"">
-            <div class=""brand"">
-                <div class=""logo-box"">PT JTS</div>
-                <div>
-                    <div class=""title"">SERTIFIKAT JAMINAN GARANSI RESMI</div>
-                    <div class=""subtitle"">Sistem Garansi Hardware &amp; Dukungan Pelanggan Resmi</div>
+        <!-- Kop Surat -->
+        <div class=""kop"">
+            <div>
+                <div class=""kop-brand"">
+                    <span class=""kop-logo"">PT JTS</span>
+                    <span class=""kop-company"">PT JAYA TEKNOLOGI SOLUSI</span>
+                </div>
+                <div class=""kop-dept"">Divisi Layanan Purna Jual &amp; Jaminan Garansi Resmi Hardware</div>
+                <div class=""kop-meta"">
+                    Gedung Cyber 2 Tower Lt. 18, Jl. H.R. Rasuna Said Blok X-5, Jakarta Selatan 12950<br>
+                    Telepon: (021) 5088-7799 • Email: aftersales@jts.co.id • NPWP: 01.884.223.4-015.000
                 </div>
             </div>
-            <div class=""status-badge"">✓ {status}</div>
+            <div class=""cert-badge-box"">
+                <div class=""cert-doc-title"">SERTIFIKAT GARANSI RESMI</div>
+                <div class=""cert-doc-sub"">No. Registrasi: JTS-GAR/{serial}</div>
+                <div class=""cert-status"">{status}</div>
+            </div>
         </div>
 
+        <!-- Specifications & QR -->
         <div class=""main-layout"">
-            <div class=""grid"">
-                <div class=""item"">
-                    <div class=""label"">Model Perangkat</div>
-                    <div class=""value"">{model}</div>
+            <div class=""specs-grid"">
+                <div class=""spec-item"">
+                    <div class=""spec-label"">Model Perangkat / Unit</div>
+                    <div class=""spec-val"">{model}</div>
                 </div>
-                <div class=""item"">
-                    <div class=""label"">Nomor Seri (Serial Number)</div>
-                    <div class=""value"" style=""color:#2563EB;"">{serial}</div>
+                <div class=""spec-item"">
+                    <div class=""spec-label"">Nomor Seri Unit (S/N)</div>
+                    <div class=""spec-val"">{serial}</div>
                 </div>
-                <div class=""item"" style=""grid-column: span 2;"">
-                    <div class=""label"">Identitas BIOS / Hardware ID</div>
-                    <div class=""value"" style=""font-size:12px; word-break: break-all;"">{hwId}</div>
+                <div class=""spec-item"" style=""grid-column: span 2;"">
+                    <div class=""spec-label"">Identitas BIOS / Hardware ID (UUID)</div>
+                    <div class=""spec-val"" style=""font-size: 11px; word-break: break-all;"">{hwId}</div>
                 </div>
-                <div class=""item"">
-                    <div class=""label"">Nama Pemilik Terdaftar</div>
-                    <div class=""value"">{buyerName}</div>
+                <div class=""spec-item"">
+                    <div class=""spec-label"">Nama Pemilik Terdaftar</div>
+                    <div class=""spec-val"">{buyerName}</div>
                 </div>
-                <div class=""item"">
-                    <div class=""label"">Masa Berlaku Garansi</div>
-                    <div class=""value"" style=""color:#059669;"">{warrantyEnd}</div>
+                <div class=""spec-item"">
+                    <div class=""spec-label"">Periode Garansi Berlaku</div>
+                    <div class=""spec-val"">{warrantyEnd}</div>
                 </div>
             </div>
 
-            <div class=""qr-box"">
-                <div class=""qr-title"">PINDAI VERIFIKASI</div>
+            <div class=""qr-card"">
+                <div class=""qr-header"">VERIFIKASI KEABSAHAN</div>
                 {(string.IsNullOrEmpty(qrBase64) ? "" : $"<img class=\"qr-img\" src=\"{qrBase64}\" alt=\"QR Code Verifikasi\" />")}
-                <div class=""token-text"">{qrToken}</div>
-                <div style=""font-size: 9px; color: #94A3B8; margin-top: 4px;"">Pindai dengan kamera smartphone</div>
+                <div class=""qr-token"">{qrToken}</div>
+                <div class=""qr-note"">Pindai untuk validasi data cloud</div>
             </div>
         </div>
 
+        <!-- Terms Box -->
+        <div class=""terms-box"">
+            <strong>Ketentuan Garansi Resmi PT JTS:</strong>
+            Sertifikat ini adalah bukti sah bahwa unit komputer/laptop dengan nomor seri tertera dilindungi oleh jaminan servis resmi PT Jaya Teknologi Solusi. Cakupan mencakup penggantian suku cadang OEM dan jasa teknisi (remote support / on-site workshop) sesuai masa aktif garansi.
+        </div>
+
+        <!-- Signatures Section -->
+        <div class=""signatures"">
+            <div>
+                <div class=""sig-title"">Pemilik / Pemegang Garansi</div>
+                <div class=""sig-space"">
+                    <span style=""font-size: 9.5px; color: #94A3B8; font-style: italic;"">(Tercatat di sistem registrasi)</span>
+                </div>
+                <div class=""sig-name"">{buyerName}</div>
+            </div>
+
+            <div>
+                <div class=""sig-title"">Pengesahan Resmi PT JTS</div>
+                <div class=""sig-space"">
+                    <div class=""sig-stamp"">
+                        PT JAYA TEKNOLOGI SOLUSI<br>
+                        DIGITALLY VERIFIED HARDWARE CERTIFICATE
+                    </div>
+                </div>
+                <div class=""sig-name"">Divisi Layanan Purna Jual PT JTS</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
         <div class=""footer"">
             <div>
-                <strong>PT Jaya Teknologi Solusi</strong><br>
-                Hotline Servis Resmi: 0812-9900-1122 • Dukungan Remote &amp; On-Site
+                Layanan Bantuan Resmi: (021) 5088-7799 • aftersales@jts.co.id
             </div>
-            <div class=""seal"">
-                ★ JTS VERIFIED HARDWARE GUARANTEE ★
+            <div class=""footer-seal"">
+                DOKUMEN RESMI PT JAYA TEKNOLOGI SOLUSI
             </div>
         </div>
 
         <div class=""actions"">
-            <button class=""print-btn"" onclick=""window.print()"">🖨️ Cetak Sertifikat / Simpan PDF</button>
+            <button class=""print-btn"" onclick=""window.print()"">Cetak Sertifikat / Simpan PDF</button>
         </div>
     </div>
 </body>

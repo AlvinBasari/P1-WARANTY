@@ -80,11 +80,15 @@ namespace TechnicianApp.ViewModels
         [ObservableProperty]
         private decimal _totalPayableAmount;
 
-        public InvoiceManagerViewModel(ApiClient apiClient, RepairRequestDto ticket, Action onClose)
+        private bool _isSaving;
+        private readonly Action<ConfirmDialogViewModel>? _showConfirm;
+
+        public InvoiceManagerViewModel(ApiClient apiClient, RepairRequestDto ticket, Action onClose, Action<ConfirmDialogViewModel>? showConfirm = null)
         {
             _apiClient = apiClient;
             _ticket = ticket;
             _onClose = onClose;
+            _showConfirm = showConfirm;
 
             _ = LoadInvoiceAsync();
         }
@@ -225,7 +229,28 @@ namespace TechnicianApp.ViewModels
         [RelayCommand]
         public void RemoveItem(InvoiceItemPayloadDto item)
         {
-            if (Items.Contains(item))
+            if (item == null || !Items.Contains(item)) return;
+
+            if (_showConfirm != null)
+            {
+                _showConfirm(new ConfirmDialogViewModel(
+                    title: "Hapus Item Faktur",
+                    message: $"Apakah Anda yakin ingin menghapus item '{item.ItemName}' dari rincian faktur?",
+                    onConfirm: () =>
+                    {
+                        Items.Remove(item);
+                        RecalculateTotals();
+                        StatusMessage = "Item dihapus dari faktur.";
+                    },
+                    onCancel: () => { },
+                    detailNote: $"Kode: {item.ItemCode ?? "-"} • Qty: {item.Quantity} • Harga: Rp {item.UnitPrice:N0}",
+                    confirmText: "Ya, Hapus",
+                    cancelText: "Batal",
+                    dialogType: "danger",
+                    badgeText: "HAPUS ITEM"
+                ));
+            }
+            else
             {
                 Items.Remove(item);
                 RecalculateTotals();
@@ -236,12 +261,55 @@ namespace TechnicianApp.ViewModels
         [RelayCommand]
         public async Task SaveInvoiceAsync()
         {
+            if (_isSaving) return;
+
             if (Items.Count == 0)
             {
                 StatusMessage = "Tambahkan minimal 1 item sebelum menyimpan faktur.";
                 return;
             }
 
+            if (_showConfirm != null)
+            {
+                if (TotalPayableAmount > 0)
+                {
+                    _showConfirm(new ConfirmDialogViewModel(
+                        title: "Peringatan: Faktur Memiliki Tagihan Klien",
+                        message: $"Faktur ini memiliki total sisa tagihan sebesar Rp {TotalPayableAmount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)} yang dibebankan kepada pelanggan (di luar cakupan garansi gratis).\n\nPastikan pelanggan telah memahami dan menyetujui rincian biaya ini.",
+                        onConfirm: () => _ = ExecuteSaveInvoiceAsync(),
+                        onCancel: () => { },
+                        detailNote: $"Subtotal: Rp {SubtotalAmount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)}\nPotongan Garansi (100%): - Rp {WarrantyDiscountAmount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)}\nSisa Tagihan Klien: Rp {TotalPayableAmount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)}",
+                        confirmText: "Terbitkan Faktur",
+                        cancelText: "Tinjau Ulang",
+                        dialogType: "warning",
+                        badgeText: "TAGIHAN BERBAYAR"
+                    ));
+                    return;
+                }
+                else
+                {
+                    _showConfirm(new ConfirmDialogViewModel(
+                        title: "Konfirmasi Penerbitan Faktur",
+                        message: "Seluruh item pada faktur ini dijamin 100% oleh garansi resmi PT JTS (Total Tagihan Klien: Rp 0). Terbitkan dan sinkronkan sekarang?",
+                        onConfirm: () => _ = ExecuteSaveInvoiceAsync(),
+                        onCancel: () => { },
+                        detailNote: $"Tiket #{Ticket.Id} • {Items.Count} Item Tercatat",
+                        confirmText: "Terbitkan Faktur",
+                        cancelText: "Batal",
+                        dialogType: "info",
+                        badgeText: "GARANSI 100% RESMI"
+                    ));
+                    return;
+                }
+            }
+
+            await ExecuteSaveInvoiceAsync();
+        }
+
+        public async Task ExecuteSaveInvoiceAsync()
+        {
+            if (_isSaving) return;
+            _isSaving = true;
             IsLoading = true;
             StatusMessage = null;
 
@@ -267,6 +335,7 @@ namespace TechnicianApp.ViewModels
             }
             finally
             {
+                _isSaving = false;
                 IsLoading = false;
             }
         }
@@ -274,6 +343,7 @@ namespace TechnicianApp.ViewModels
         [RelayCommand]
         public async Task PrintOrDownloadHtmlAsync()
         {
+            if (IsLoading) return;
             if (CurrentInvoice == null || CurrentInvoice.Id == 0)
             {
                 StatusMessage = "Simpan faktur terlebih dahulu sebelum mencetak.";
@@ -286,7 +356,8 @@ namespace TechnicianApp.ViewModels
             try
             {
                 string html = await _apiClient.DownloadInvoiceHtmlAsync(CurrentInvoice.Id);
-                string tempPath = Path.Combine(Path.GetTempPath(), $"Invoice_{CurrentInvoice.InvoiceNumber}.html");
+                string safeInvoiceNo = string.Join("_", (CurrentInvoice.InvoiceNumber ?? "INV").Split(Path.GetInvalidFileNameChars()));
+                string tempPath = Path.Combine(Path.GetTempPath(), $"Invoice_{safeInvoiceNo}_{DateTime.Now:yyyyMMddHHmmssfff}.html");
                 await File.WriteAllTextAsync(tempPath, html);
 
                 // Open in default browser

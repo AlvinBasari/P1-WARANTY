@@ -28,7 +28,9 @@
                         <TextBlock Text="{Binding Ticket.Id, StringFormat='Faktur klaim garansi untuk Tiket #{0}'}" FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}"/>
                     </StackPanel>
 
-                    <Button Grid.Column="1" Command="{Binding CloseCommand}" Padding="8,4" Background="Transparent" BorderBrush="Transparent" Cursor="Hand">
+                    <Button Grid.Column="1" Command="{Binding CloseCommand}"
+                            HotKey="Escape"
+                            Padding="8,4" Background="Transparent" BorderBrush="Transparent" Cursor="Hand">
                         <TextBlock Text="✕" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}"/>
                     </Button>
                 </Grid>

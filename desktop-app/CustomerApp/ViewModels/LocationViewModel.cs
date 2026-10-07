@@ -118,18 +118,22 @@ namespace CustomerApp.ViewModels
         [ObservableProperty]
         private string? _errorMessage;
 
+        private readonly Action<ConfirmDialogViewModel>? _showConfirm;
+
         public LocationViewModel(
             ApiClient apiClient,
             Func<DeviceDto?> getDevice,
             Action<DeviceDto> onLocationUpdated,
             Func<UserDto?>? getUser = null,
-            Action<UserDto>? onUserUpdated = null)
+            Action<UserDto>? onUserUpdated = null,
+            Action<ConfirmDialogViewModel>? showConfirm = null)
         {
             _apiClient = apiClient;
             _getDevice = getDevice;
             _onLocationUpdated = onLocationUpdated;
             _getUser = getUser ?? (() => null);
             _onUserUpdated = onUserUpdated;
+            _showConfirm = showConfirm;
 
             LoadUserProfile();
             LoadDeviceLocation();
@@ -255,10 +259,32 @@ namespace CustomerApp.ViewModels
         [RelayCommand]
         public void RemoveAvatar()
         {
-            LocalAvatarFilePath = null;
-            UserAvatarUrl = null;
-            AvatarBitmap = null;
-            SuccessMessage = "Foto profil dihapus. Klik 'Simpan Perubahan' untuk menerapkan.";
+            if (_showConfirm != null)
+            {
+                _showConfirm(new ConfirmDialogViewModel(
+                    title: "Hapus Foto Profil",
+                    message: "Apakah Anda yakin ingin menghapus foto profil kustom dan kembali menggunakan avatar inisial?",
+                    onConfirm: () =>
+                    {
+                        LocalAvatarFilePath = null;
+                        UserAvatarUrl = null;
+                        AvatarBitmap = null;
+                        SuccessMessage = "Foto profil dihapus. Klik 'Simpan Perubahan Akun & Lokasi' untuk menerapkan.";
+                    },
+                    onCancel: () => { },
+                    confirmText: "Hapus Foto",
+                    cancelText: "Batal",
+                    dialogType: "warning",
+                    badgeText: "AVATAR"
+                ));
+            }
+            else
+            {
+                LocalAvatarFilePath = null;
+                UserAvatarUrl = null;
+                AvatarBitmap = null;
+                SuccessMessage = "Foto profil dihapus. Klik 'Simpan Perubahan' untuk menerapkan.";
+            }
         }
 
         [RelayCommand]
@@ -314,6 +340,8 @@ namespace CustomerApp.ViewModels
         [RelayCommand]
         public async Task SaveProfileAndLocationAsync()
         {
+            if (IsLoading) return;
+
             if (string.IsNullOrWhiteSpace(UserName))
             {
                 ErrorMessage = "Nama lengkap tidak boleh kosong.";

@@ -36,7 +36,10 @@ namespace SharedCore.Services
                 modelName.Contains("IDEAPAD") || modelName.Contains("PAVILION") || modelName.Contains("INSPIRON") ||
                 modelName.Contains("LATITUDE") || modelName.Contains("VOSTRO") || modelName.Contains("MACBOOK") ||
                 modelName.Contains("NOTEBOOK") || modelName.Contains("LAPTOP") || modelName.Contains("SURFACE") ||
-                modelName.Contains("LEGION 5") || modelName.Contains("TUF GAMING A15") || modelName.Contains("ROG ZEPHYRUS"))
+                modelName.Contains("LEGION") || modelName.Contains("LOQ") || modelName.Contains("PREDATOR") ||
+                modelName.Contains("NITRO") || modelName.Contains("VICTUS") || modelName.Contains("OMEN") ||
+                modelName.Contains("TUF") || modelName.Contains("ROG") || modelName.Contains("ALIENWARE") ||
+                modelName.Contains("KATANA") || modelName.Contains("SWIFT") || modelName.Contains("BLADE"))
             {
                 return DeviceCategory.Laptop;
             }

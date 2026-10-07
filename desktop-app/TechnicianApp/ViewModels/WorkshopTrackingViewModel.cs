@@ -46,11 +46,14 @@ namespace TechnicianApp.ViewModels
         public bool IsStep4Completed => GetStatusIndex(CurrentStatus) >= 3;
         public bool IsStep5Completed => GetStatusIndex(CurrentStatus) >= 4;
 
-        public WorkshopTrackingViewModel(ApiClient apiClient, RepairRequestDto ticket, Action onClose)
+        private readonly Action<ConfirmDialogViewModel>? _showConfirm;
+
+        public WorkshopTrackingViewModel(ApiClient apiClient, RepairRequestDto ticket, Action onClose, Action<ConfirmDialogViewModel>? showConfirm = null)
         {
             _apiClient = apiClient;
             _ticket = ticket;
             _onClose = onClose;
+            _showConfirm = showConfirm;
 
             if (ticket.Tracking != null)
             {
@@ -132,8 +135,41 @@ namespace TechnicianApp.ViewModels
         [RelayCommand]
         public async Task AdvanceStepAsync(string targetStatus)
         {
-            if (string.IsNullOrEmpty(targetStatus)) return;
+            if (IsLoading || string.IsNullOrEmpty(targetStatus)) return;
 
+            if (_showConfirm != null)
+            {
+                string label = targetStatus switch
+                {
+                    "dijemput" => "Unit Dijemput / Diterima",
+                    "di_service_center" => "Tiba di Service Center",
+                    "sedang_diperbaiki" => "Sedang Dalam Proses Perbaikan",
+                    "selesai" => "Perbaikan & Pengujian Selesai",
+                    "dikembalikan" => "Unit Telah Dikembalikan ke Klien",
+                    _ => targetStatus
+                };
+
+                string noteText = !string.IsNullOrWhiteSpace(NewNotes) ? NewNotes.Trim() : "(Tanpa catatan khusus)";
+                _showConfirm(new ConfirmDialogViewModel(
+                    title: "Konfirmasi Pembaruan Status Workshop",
+                    message: $"Apakah Anda yakin ingin memperbarui tahapan unit menjadi '{label}'? Klien dapat langsung memantau progres ini dari aplikasi linimasa servis.",
+                    onConfirm: () => _ = ExecuteAdvanceStepAsync(targetStatus),
+                    onCancel: () => { },
+                    detailNote: $"Catatan Teknisi: {noteText}",
+                    confirmText: "Perbarui Status",
+                    cancelText: "Batal",
+                    dialogType: targetStatus == "dikembalikan" || targetStatus == "selesai" ? "success" : "info",
+                    badgeText: "WORKSHOP STEPPER"
+                ));
+                return;
+            }
+
+            await ExecuteAdvanceStepAsync(targetStatus);
+        }
+
+        public async Task ExecuteAdvanceStepAsync(string targetStatus)
+        {
+            if (IsLoading) return;
             IsLoading = true;
             StatusMessage = null;
 

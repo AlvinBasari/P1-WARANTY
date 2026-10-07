@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.Management;
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 
 namespace SharedCore.Services
 {
@@ -33,6 +35,24 @@ namespace SharedCore.Services
 
     public class SystemMetricsService
     {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        private class MEMORYSTATUSEX
+        {
+            public uint dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX lpBuffer);
+
         public SystemMetrics GetSystemMetrics()
         {
             var metrics = new SystemMetrics();
@@ -82,13 +102,43 @@ namespace SharedCore.Services
                         }
                     }
                 }
+                else if (OperatingSystem.IsWindows())
+                {
+                    try
+                    {
+                        using var searcher = new System.Management.ManagementObjectSearcher(
+                            "SELECT Model, InterfaceType, MediaType FROM Win32_DiskDrive");
+                        foreach (System.Management.ManagementObject obj in searcher.Get())
+                        {
+                            string model = (obj["Model"]?.ToString() ?? "").Trim();
+                            string iface = (obj["InterfaceType"]?.ToString() ?? "").Trim();
+                            string media = (obj["MediaType"]?.ToString() ?? "").Trim();
+
+                            if (!string.IsNullOrEmpty(model))
+                            {
+                                bool isNvme = model.Contains("NVMe", StringComparison.OrdinalIgnoreCase) ||
+                                              model.Contains("MTFDK", StringComparison.OrdinalIgnoreCase) ||
+                                              model.Contains("MZAL", StringComparison.OrdinalIgnoreCase) ||
+                                              iface.Equals("SCSI", StringComparison.OrdinalIgnoreCase);
+
+                                bool isHdd = media.Contains("Rotational", StringComparison.OrdinalIgnoreCase) ||
+                                             model.Contains("HDD", StringComparison.OrdinalIgnoreCase);
+
+                                metrics.IsRotationalHdd = isHdd;
+                                metrics.StorageModel = isHdd ? $"{model} (HDD)" : (isNvme ? $"{model} (NVMe SSD)" : $"{model} (SSD)");
+                                break;
+                            }
+                        }
+                    }
+                    catch { }
+                }
             }
             catch
             {
                 // Fallback default
             }
 
-            // 2. Memory metrics (real Linux /proc/meminfo or cross-platform estimate)
+            // 2. Memory metrics (real Linux /proc/meminfo or Windows GlobalMemoryStatusEx)
             try
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/proc/meminfo"))
@@ -123,6 +173,24 @@ namespace SharedCore.Services
                         metrics.MemoryUsedGb = Math.Round(usedGb, 1);
                         metrics.MemoryPercentUsed = Math.Clamp(percent, 1, 99);
                     }
+                }
+                else if (OperatingSystem.IsWindows())
+                {
+                    try
+                    {
+                        var status = new MEMORYSTATUSEX();
+                        if (GlobalMemoryStatusEx(status))
+                        {
+                            double totalGb = status.ullTotalPhys / (1024.0 * 1024.0 * 1024.0);
+                            double availGb = status.ullAvailPhys / (1024.0 * 1024.0 * 1024.0);
+                            double usedGb = totalGb - availGb;
+
+                            metrics.MemoryTotalGb = Math.Round(totalGb, 1);
+                            metrics.MemoryUsedGb = Math.Round(usedGb, 1);
+                            metrics.MemoryPercentUsed = Math.Clamp((int)status.dwMemoryLoad, 1, 99);
+                        }
+                    }
+                    catch { }
                 }
                 else
                 {
@@ -180,6 +248,36 @@ namespace SharedCore.Services
                         metrics.PowerStatus = "Daya Listrik AC Stabil";
                     }
                 }
+                else if (OperatingSystem.IsWindows())
+                {
+                    try
+                    {
+                        using var s = new System.Management.ManagementObjectSearcher("SELECT EstimatedChargeRemaining, BatteryStatus FROM Win32_Battery");
+                        foreach (System.Management.ManagementObject obj in s.Get())
+                        {
+                            if (int.TryParse(obj["EstimatedChargeRemaining"]?.ToString(), out var cap))
+                            {
+                                metrics.IsBattery = true;
+                                metrics.PowerLabel = "Baterai Laptop";
+                                metrics.PowerPercent = Math.Clamp(cap, 0, 100);
+                                metrics.PowerDisplay = $"{cap}%";
+
+                                int.TryParse(obj["BatteryStatus"]?.ToString(), out var bStatus);
+                                metrics.PowerStatus = bStatus == 2 ? "Sedang Mengisi Daya" : "Baterai Laptop Stabil";
+                                break;
+                            }
+                        }
+                    }
+                    catch { }
+
+                    if (!metrics.IsBattery)
+                    {
+                        metrics.PowerLabel = "Kondisi Daya";
+                        metrics.PowerDisplay = "AC";
+                        metrics.PowerPercent = 100;
+                        metrics.PowerStatus = "Daya Listrik AC Stabil";
+                    }
+                }
                 else
                 {
                     metrics.PowerLabel = "Kondisi Daya";
@@ -193,7 +291,7 @@ namespace SharedCore.Services
                 // Fallback default
             }
 
-            // 4. BIOS Version (Real DMI reading)
+            // 4. BIOS Version (Real DMI / Registry reading)
             try
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/sys/class/dmi/id/bios_version"))
@@ -201,6 +299,38 @@ namespace SharedCore.Services
                     string bios = File.ReadAllText("/sys/class/dmi/id/bios_version").Trim();
                     if (!string.IsNullOrEmpty(bios))
                         metrics.BiosVersion = bios;
+                }
+                else if (OperatingSystem.IsWindows())
+                {
+                    try
+                    {
+                        using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
+                        if (key != null)
+                        {
+                            string? bVer = key.GetValue("BIOSVersion") as string;
+                            if (!string.IsNullOrWhiteSpace(bVer))
+                                metrics.BiosVersion = bVer.Trim();
+                        }
+                    }
+                    catch { }
+
+                    if (metrics.BiosVersion == "M16KT37A")
+                    {
+                        try
+                        {
+                            using var s = new System.Management.ManagementObjectSearcher("SELECT SMBIOSBIOSVersion FROM Win32_Bios");
+                            foreach (System.Management.ManagementObject obj in s.Get())
+                            {
+                                string? bVer = obj["SMBIOSBIOSVersion"]?.ToString();
+                                if (!string.IsNullOrWhiteSpace(bVer))
+                                {
+                                    metrics.BiosVersion = bVer.Trim();
+                                    break;
+                                }
+                            }
+                        }
+                        catch { }
+                    }
                 }
             }
             catch
@@ -228,6 +358,20 @@ namespace SharedCore.Services
                             }
                         }
                     }
+                }
+                else if (OperatingSystem.IsWindows())
+                {
+                    try
+                    {
+                        using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\CentralProcessor\0");
+                        if (key != null)
+                        {
+                            string? pName = key.GetValue("ProcessorNameString") as string;
+                            if (!string.IsNullOrWhiteSpace(pName))
+                                metrics.ProcessorName = pName.Trim();
+                        }
+                    }
+                    catch { }
                 }
             }
             catch

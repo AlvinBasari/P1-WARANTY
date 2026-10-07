@@ -23,7 +23,7 @@
                         <Border Background="{DynamicResource VantageAccentSubtleBrush}" CornerRadius="6" Padding="8,4">
                             <TextBlock Text="PT JTS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource VantageAccentBrush}" FontFamily="Consolas,Monospace" />
                         </Border>
-                        <TextBlock Text="PT JAYA TEKNOLOGI SOLUSINDO" FontSize="16" FontWeight="ExtraBold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="PT JAYA TEKNOLOGI SOLUSI" FontSize="16" FontWeight="ExtraBold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" />
                     </StackPanel>
                     <TextBlock Text="Sentra Layanan &amp; Klaim Garansi Resmi Hardware Terpadu" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" />
                     <TextBlock Text="Cyber 2 Tower Lt. 18, Jakarta Selatan • Hotline: (021) 5088-7799" FontSize="11" Foreground="{DynamicResource VantageTextSubtleBrush}" />
@@ -141,7 +141,7 @@
                                 <PathIcon Data="{StaticResource IconCheckCircle}" Width="14" Height="14" Foreground="{DynamicResource VantageGreenBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="JAMINAN PERLINDUNGAN GARANSI RESMI" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource VantageGreenBrush}" VerticalAlignment="Center" />
                             </StackPanel>
-                            <TextBlock Text="Seluruh penggantian suku cadang dan jasa perbaikan di atas dilindungi oleh Jaminan Garansi Resmi PT Jaya Teknologi Solusindo. Total potongan klaim garansi telah diaplikasikan secara otomatis ke faktur ini."
+                            <TextBlock Text="Seluruh penggantian suku cadang dan jasa perbaikan di atas dilindungi oleh Jaminan Garansi Resmi PT Jaya Teknologi Solusi. Total potongan klaim garansi telah diaplikasikan secara otomatis ke faktur ini."
                                        FontSize="11" Foreground="{DynamicResource VantageTextBrush}" TextWrapping="Wrap" LineHeight="16" />
                         </StackPanel>
                     </Border>
@@ -186,6 +186,7 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
                     <Button Command="{Binding CloseCommand}"
+                            HotKey="Escape"
                             Background="{DynamicResource VantageBgBrush}" Foreground="{DynamicResource VantageTextBrush}"
                             BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
                             Padding="16,8" CornerRadius="6" FontSize="12" FontWeight="SemiBold">

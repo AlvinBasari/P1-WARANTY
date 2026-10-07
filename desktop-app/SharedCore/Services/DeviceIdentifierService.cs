@@ -25,7 +25,7 @@ namespace SharedCore.Services
 
             try
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     id = GetWindowsBiosId();
                 }
@@ -64,10 +64,9 @@ namespace SharedCore.Services
 
             try
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
-                    model = RunCommand("wmic", "computersystem get model");
-                    model = CleanWmicOutput(model);
+                    model = GetWindowsModelInternal();
                 }
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
@@ -98,7 +97,13 @@ namespace SharedCore.Services
         {
             try
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/sys/class/dmi/id/product_serial"))
+                if (OperatingSystem.IsWindows())
+                {
+                    string winSerial = GetWindowsSerialNumberInternal();
+                    if (!string.IsNullOrEmpty(winSerial))
+                        return winSerial;
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/sys/class/dmi/id/product_serial"))
                 {
                     string serial = File.ReadAllText("/sys/class/dmi/id/product_serial").Trim();
                     if (!string.IsNullOrEmpty(serial) && !serial.Contains("None", StringComparison.OrdinalIgnoreCase) && !serial.Contains("Default", StringComparison.OrdinalIgnoreCase))
@@ -121,23 +126,228 @@ namespace SharedCore.Services
             return "SN-JTS-" + Environment.MachineName.ToUpperInvariant();
         }
 
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         private string GetWindowsBiosId()
         {
-            // Try BIOS serial number first
-            string serial = RunCommand("wmic", "bios get serialnumber");
-            serial = CleanWmicOutput(serial);
+            try
+            {
+                return GetWindowsBiosIdInternal();
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
 
-            if (!string.IsNullOrEmpty(serial) && !serial.Equals("0", StringComparison.OrdinalIgnoreCase))
-                return $"BIOS-SN-{serial}";
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        private string GetWindowsModelInternal()
+        {
+            // 1. Try Windows Registry (instant, no WMI service dependency)
+            try
+            {
+                using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
+                if (key != null)
+                {
+                    string mfg = (key.GetValue("SystemManufacturer") as string ?? "").Trim();
+                    string family = (key.GetValue("SystemFamily") as string ?? "").Trim();
+                    string prod = (key.GetValue("SystemProductName") as string ?? "").Trim();
+                    string ver = (key.GetValue("SystemVersion") as string ?? "").Trim();
 
-            // Try UUID
-            string uuid = RunCommand("wmic", "csproduct get uuid");
-            uuid = CleanWmicOutput(uuid);
+                    bool isValid(string s) => !string.IsNullOrEmpty(s) &&
+                                              !s.Contains("Default", StringComparison.OrdinalIgnoreCase) &&
+                                              !s.Contains("To be filled", StringComparison.OrdinalIgnoreCase) &&
+                                              !s.Contains("System Product", StringComparison.OrdinalIgnoreCase) &&
+                                              !s.Contains("None", StringComparison.OrdinalIgnoreCase);
 
-            if (!string.IsNullOrEmpty(uuid))
-                return $"BIOS-UUID-{uuid}";
+                    string resolvedModel = "";
+                    if (isValid(family))
+                        resolvedModel = family;
+                    else if (isValid(ver))
+                        resolvedModel = ver;
+                    else if (isValid(prod))
+                        resolvedModel = prod;
+
+                    if (!string.IsNullOrEmpty(resolvedModel))
+                    {
+                        if (isValid(mfg) && !resolvedModel.StartsWith(mfg, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (isValid(prod) && !resolvedModel.Contains(prod, StringComparison.OrdinalIgnoreCase))
+                                return $"{mfg} {resolvedModel} ({prod})";
+                            return $"{mfg} {resolvedModel}";
+                        }
+                        return resolvedModel;
+                    }
+                }
+            }
+            catch { }
+
+            // 2. Try WMI ManagementObjectSearcher
+            try
+            {
+                using var searcher = new System.Management.ManagementObjectSearcher("SELECT Manufacturer, Model, SystemFamily FROM Win32_ComputerSystem");
+                foreach (System.Management.ManagementObject obj in searcher.Get())
+                {
+                    string mfg = (obj["Manufacturer"]?.ToString() ?? "").Trim();
+                    string model = (obj["Model"]?.ToString() ?? "").Trim();
+                    string family = (obj["SystemFamily"]?.ToString() ?? "").Trim();
+
+                    string best = !string.IsNullOrEmpty(family) && !family.Contains("Default", StringComparison.OrdinalIgnoreCase)
+                        ? (!string.IsNullOrEmpty(model) && !family.Contains(model, StringComparison.OrdinalIgnoreCase) ? $"{family} ({model})" : family)
+                        : model;
+
+                    if (!string.IsNullOrEmpty(best))
+                    {
+                        if (!string.IsNullOrEmpty(mfg) && !best.StartsWith(mfg, StringComparison.OrdinalIgnoreCase))
+                            return $"{mfg} {best}";
+                        return best;
+                    }
+                }
+            }
+            catch { }
+
+            // 3. Fallback to PowerShell CIM
+            try
+            {
+                string output = RunCommand("powershell", "-NoProfile -Command \"(Get-CimInstance Win32_ComputerSystem).Model\"");
+                output = output?.Trim() ?? "";
+                if (!string.IsNullOrEmpty(output) && !output.Contains("Error", StringComparison.OrdinalIgnoreCase))
+                    return output;
+            }
+            catch { }
+
+            // 4. Try legacy wmic
+            try
+            {
+                string wmicOut = RunCommand("wmic", "computersystem get model");
+                string cleaned = CleanWmicOutput(wmicOut);
+                if (!string.IsNullOrEmpty(cleaned)) return cleaned;
+            }
+            catch { }
 
             return string.Empty;
+        }
+
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        private string GetWindowsSerialNumberInternal()
+        {
+            // 1. Try WMI Win32_Bios
+            try
+            {
+                using var searcher = new System.Management.ManagementObjectSearcher("SELECT SerialNumber FROM Win32_Bios");
+                foreach (System.Management.ManagementObject obj in searcher.Get())
+                {
+                    string serial = obj["SerialNumber"]?.ToString()?.Trim() ?? "";
+                    if (IsValidSerial(serial))
+                        return serial;
+                }
+            }
+            catch { }
+
+            // 2. Try WMI Win32_BaseBoard
+            try
+            {
+                using var searcher = new System.Management.ManagementObjectSearcher("SELECT SerialNumber FROM Win32_BaseBoard");
+                foreach (System.Management.ManagementObject obj in searcher.Get())
+                {
+                    string serial = obj["SerialNumber"]?.ToString()?.Trim() ?? "";
+                    if (IsValidSerial(serial))
+                        return serial;
+                }
+            }
+            catch { }
+
+            // 3. Try PowerShell CIM
+            try
+            {
+                string serial = RunCommand("powershell", "-NoProfile -Command \"(Get-CimInstance Win32_Bios).SerialNumber\"");
+                serial = serial?.Trim() ?? "";
+                if (IsValidSerial(serial))
+                    return serial;
+            }
+            catch { }
+
+            // 4. Try legacy wmic
+            try
+            {
+                string serial = RunCommand("wmic", "bios get serialnumber");
+                serial = CleanWmicOutput(serial);
+                if (IsValidSerial(serial))
+                    return serial;
+            }
+            catch { }
+
+            return "SN-JTS-" + Environment.MachineName.ToUpperInvariant();
+        }
+
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        private string GetWindowsBiosIdInternal()
+        {
+            // 1. Try WMI Win32_Bios SerialNumber & Win32_ComputerSystemProduct UUID
+            try
+            {
+                using var searcher = new System.Management.ManagementObjectSearcher("SELECT SerialNumber FROM Win32_Bios");
+                foreach (System.Management.ManagementObject obj in searcher.Get())
+                {
+                    string serial = obj["SerialNumber"]?.ToString()?.Trim() ?? "";
+                    if (IsValidSerial(serial))
+                        return $"BIOS-SN-{serial}";
+                }
+            }
+            catch { }
+
+            try
+            {
+                using var searcher = new System.Management.ManagementObjectSearcher("SELECT UUID FROM Win32_ComputerSystemProduct");
+                foreach (System.Management.ManagementObject obj in searcher.Get())
+                {
+                    string uuid = obj["UUID"]?.ToString()?.Trim() ?? "";
+                    if (!string.IsNullOrEmpty(uuid) && !uuid.Contains("00000000") && !uuid.Contains("FFFFFFFF", StringComparison.OrdinalIgnoreCase))
+                        return $"BIOS-UUID-{uuid}";
+                }
+            }
+            catch { }
+
+            // 2. Try PowerShell CIM
+            try
+            {
+                string serial = RunCommand("powershell", "-NoProfile -Command \"(Get-CimInstance Win32_Bios).SerialNumber\"");
+                serial = serial?.Trim() ?? "";
+                if (IsValidSerial(serial))
+                    return $"BIOS-SN-{serial}";
+
+                string uuid = RunCommand("powershell", "-NoProfile -Command \"(Get-CimInstance Win32_ComputerSystemProduct).UUID\"");
+                uuid = uuid?.Trim() ?? "";
+                if (!string.IsNullOrEmpty(uuid) && !uuid.Contains("00000000"))
+                    return $"BIOS-UUID-{uuid}";
+            }
+            catch { }
+
+            // 3. Try legacy wmic (older Windows)
+            try
+            {
+                string serial = RunCommand("wmic", "bios get serialnumber");
+                serial = CleanWmicOutput(serial);
+                if (IsValidSerial(serial))
+                    return $"BIOS-SN-{serial}";
+
+                string uuid = RunCommand("wmic", "csproduct get uuid");
+                uuid = CleanWmicOutput(uuid);
+                if (!string.IsNullOrEmpty(uuid))
+                    return $"BIOS-UUID-{uuid}";
+            }
+            catch { }
+
+            return string.Empty;
+        }
+
+        private static bool IsValidSerial(string? serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return false;
+            if (serial.Equals("0", StringComparison.OrdinalIgnoreCase)) return false;
+            if (serial.Equals("None", StringComparison.OrdinalIgnoreCase)) return false;
+            if (serial.Contains("Default", StringComparison.OrdinalIgnoreCase)) return false;
+            if (serial.Contains("To be filled", StringComparison.OrdinalIgnoreCase)) return false;
+            return true;
         }
 
         private string GetLinuxBiosId()

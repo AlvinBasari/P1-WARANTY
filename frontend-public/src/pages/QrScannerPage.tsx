@@ -374,7 +374,7 @@ export const QrScannerPage: React.FC = () => {
                 <input
                   type="text"
                   value={manualToken}
-                  onChange={(e) => setManualToken(e.target.value)}
+                  onChange={(e) => setManualToken(e.target.value.trim())}
                   placeholder="Contoh: qr-demo-lenovo-002"
                   className="w-full text-xs p-3 bg-paper border border-mist rounded-btn focus:outline-none focus:border-signal font-mono text-ink placeholder:text-ink-subtle"
                 />

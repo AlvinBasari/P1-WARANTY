@@ -27,6 +27,7 @@ import { ScheduleRemoteModal } from '../components/ScheduleRemoteModal';
 import { InvoiceModal } from '../components/InvoiceModal';
 import { TableSkeleton } from '../components/SkeletonLoader';
 import { CopyButton } from '../components/CopyButton';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 export const RepairRequests: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -50,6 +51,14 @@ export const RepairRequests: React.FC = () => {
   const [officeNotes, setOfficeNotes] = useState<string>('');
   const [submittingMark, setSubmittingMark] = useState(false);
 
+  // Status Change Confirmation Modal State
+  const [confirmStatusData, setConfirmStatusData] = useState<{
+    isOpen: boolean;
+    req: any;
+    targetStatus: string;
+  } | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
   const fetchRequests = async () => {
     setLoading(true);
     try {
@@ -67,13 +76,29 @@ export const RepairRequests: React.FC = () => {
     fetchRequests();
   }, []);
 
-  const handleUpdateStatus = async (id: number, status: string) => {
+  const executeStatusUpdate = async (id: number, status: string) => {
+    setUpdatingStatus(true);
     try {
       await api.put(`/repair-requests/${id}/status`, { status });
-      toast.success(`Status tiket #${id} diubah ke ${status}`);
+      toast.success(`Status tiket #${id} berhasil diubah ke: ${status.toUpperCase()}`);
+      setConfirmStatusData(null);
       fetchRequests();
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Gagal mengubah status.');
+      toast.error(e.response?.data?.message || 'Gagal mengubah status tiket.');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const handleUpdateStatus = (req: any, status: string) => {
+    if (status === 'rejected' || status === 'completed') {
+      setConfirmStatusData({
+        isOpen: true,
+        req,
+        targetStatus: status,
+      });
+    } else {
+      executeStatusUpdate(req.id, status);
     }
   };
 
@@ -186,8 +211,17 @@ export const RepairRequests: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari ID, BIOS, serial, model, pelanggan..."
-            className="w-full pl-8 pr-3 py-1.5 bg-paper border border-mist rounded-btn text-xs focus:outline-none focus:border-signal text-ink placeholder:text-ink-subtle"
+            className="w-full pl-8 pr-8 py-1.5 bg-paper border border-mist rounded-btn text-xs focus:outline-none focus:border-signal text-ink placeholder:text-ink-subtle"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-ink p-0.5 rounded-full"
+              title="Hapus pencarian"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -211,7 +245,20 @@ export const RepairRequests: React.FC = () => {
                 {filteredRequests.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-5 py-12 text-center text-ink-muted text-xs">
-                      Tidak ada tiket yang sesuai dengan filter pencarian.
+                      <p>Tidak ada tiket yang sesuai dengan filter pencarian.</p>
+                      {(searchQuery || typeFilter !== 'all' || statusFilter !== 'all') && (
+                        <button
+                          onClick={() => {
+                            setSearchQuery('');
+                            setTypeFilter('all');
+                            setStatusFilter('all');
+                          }}
+                          className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-mist hover:bg-mist-dark text-ink rounded-btn text-xs font-medium transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                          <span>Bersihkan Filter</span>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ) : (
@@ -279,7 +326,7 @@ export const RepairRequests: React.FC = () => {
                         <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
                           <select
                             value={req.status}
-                            onChange={(e) => handleUpdateStatus(req.id, e.target.value)}
+                            onChange={(e) => handleUpdateStatus(req, e.target.value)}
                             className={`text-[11px] font-semibold px-2.5 py-1 rounded-btn border focus:outline-none focus:border-signal ${
                               req.status === 'completed'
                                 ? 'bg-stable-subtle text-stable border-stable/30'
@@ -519,6 +566,37 @@ export const RepairRequests: React.FC = () => {
           </div>
         </Dialog>
       </Transition>
+
+      {/* Critical Status Change Confirmation Modal */}
+      {confirmStatusData && (
+        <ConfirmModal
+          isOpen={confirmStatusData.isOpen}
+          onClose={() => setConfirmStatusData(null)}
+          onConfirm={() => executeStatusUpdate(confirmStatusData.req.id, confirmStatusData.targetStatus)}
+          loading={updatingStatus}
+          variant={confirmStatusData.targetStatus === 'rejected' ? 'danger' : 'success'}
+          title={
+            confirmStatusData.targetStatus === 'rejected'
+              ? 'Konfirmasi Penolakan Tiket Servis'
+              : 'Konfirmasi Penyelesaian Tiket Servis'
+          }
+          description={
+            confirmStatusData.targetStatus === 'rejected'
+              ? 'Apakah Anda yakin ingin MENOLAK tiket servis ini? Status ini menandakan klaim garansi atau permohonan servis tidak dapat diproses lebih lanjut.'
+              : 'Apakah Anda yakin ingin menandai tiket servis ini sebagai SELESAI? Pastikan pengerjaan diagnostik, perbaikan fisik/non-fisik, dan pengujian QC telah terpenuhi.'
+          }
+          confirmLabel={
+            confirmStatusData.targetStatus === 'rejected' ? 'Ya, Tolak Tiket' : 'Ya, Tandai Selesai'
+          }
+          cancelLabel="Batal"
+          details={[
+            { label: 'Nomor Tiket', value: `#${confirmStatusData.req.id}` },
+            { label: 'Perangkat', value: confirmStatusData.req.device?.model || '-' },
+            { label: 'Pelanggan', value: confirmStatusData.req.user?.name || 'Pelanggan QR' },
+            { label: 'Status Baru', value: confirmStatusData.targetStatus.toUpperCase() },
+          ]}
+        />
+      )}
     </div>
   );
 };

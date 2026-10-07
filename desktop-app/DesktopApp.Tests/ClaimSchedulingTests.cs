@@ -190,5 +190,108 @@ namespace DesktopApp.Tests
             Assert.NotNull(dto.RemoteSession.Technician);
             Assert.Equal("Budi Santoso (Teknisi)", dto.RemoteSession.Technician.Name);
         }
+
+        [Fact]
+        public void ClaimViewModel_ApplyRefreshedRequestStatus_Completed_SetsCompletedAndDisablesConnect()
+        {
+            var apiClient = new ApiClient();
+            var rustDesk = new RustDeskService();
+            var vm = new ClaimViewModel(apiClient, rustDesk, () => null, _ => { })
+            {
+                IsPhysicalDamage = false,
+                IsRequestSubmitted = true,
+                IsRemoteScheduled = true,
+                CanConnectRustDesk = true
+            };
+
+            var completedReq = new RepairRequestDto
+            {
+                Id = 101,
+                Status = "completed",
+                ScheduledAt = "Hari Ini 14:00 WIB",
+                RemoteSession = new RemoteSessionDto
+                {
+                    ConnectionStatus = "completed",
+                    Technician = new UserDto { Name = "Budi Santoso" }
+                }
+            };
+
+            vm.ApplyRefreshedRequestStatus(completedReq);
+
+            Assert.True(vm.IsRemoteCompleted);
+            Assert.False(vm.IsRemoteScheduled);
+            Assert.False(vm.IsRemoteWaitingAcceptance);
+            Assert.False(vm.CanConnectRustDesk);
+            Assert.True(vm.HasScheduleApproved);
+            Assert.Equal("PERBAIKAN SELESAI", vm.RequestStatusBadge);
+            Assert.Equal(4, vm.TimelineSteps.Count);
+            Assert.True(vm.TimelineSteps[3].IsCompleted);
+            Assert.Equal("SELESAI", vm.TimelineSteps[3].BadgeText);
+        }
+
+        [Fact]
+        public void ClaimViewModel_ApplyRefreshedRequestStatus_Rejected_SetsRejectedState()
+        {
+            var apiClient = new ApiClient();
+            var rustDesk = new RustDeskService();
+            var vm = new ClaimViewModel(apiClient, rustDesk, () => null, _ => { })
+            {
+                IsPhysicalDamage = false,
+                IsRequestSubmitted = true,
+                IsRemoteWaitingAcceptance = true
+            };
+
+            var rejectedReq = new RepairRequestDto
+            {
+                Id = 102,
+                Status = "rejected"
+            };
+
+            vm.ApplyRefreshedRequestStatus(rejectedReq);
+
+            Assert.True(vm.IsRejected);
+            Assert.False(vm.IsRemoteScheduled);
+            Assert.False(vm.IsRemoteWaitingAcceptance);
+            Assert.False(vm.CanConnectRustDesk);
+            Assert.Equal("KLAIM DITOLAK", vm.RequestStatusBadge);
+            Assert.Equal(4, vm.TimelineSteps.Count);
+            Assert.Equal("DITOLAK", vm.TimelineSteps[1].BadgeText);
+        }
+
+        [Fact]
+        public void ClaimViewModel_ApplyRefreshedRequestStatus_FailedOrEscalated_SetsWorkshopState()
+        {
+            var apiClient = new ApiClient();
+            var rustDesk = new RustDeskService();
+            var vm = new ClaimViewModel(apiClient, rustDesk, () => null, _ => { })
+            {
+                IsPhysicalDamage = false,
+                IsRequestSubmitted = true,
+                IsRemoteScheduled = true
+            };
+
+            var escalatedReq = new RepairRequestDto
+            {
+                Id = 103,
+                Status = "in_progress",
+                Type = "remote",
+                NeedsOfficeRepair = true,
+                RemoteSession = new RemoteSessionDto
+                {
+                    ConnectionStatus = "failed",
+                    Technician = new UserDto { Name = "Budi Santoso" }
+                }
+            };
+
+            vm.ApplyRefreshedRequestStatus(escalatedReq);
+
+            Assert.True(vm.IsEscalatedToWorkshop);
+            Assert.False(vm.IsRemoteScheduled);
+            Assert.False(vm.CanConnectRustDesk);
+            Assert.True(vm.HasScheduleApproved);
+            Assert.Equal("DIALIHKAN KE WORKSHOP", vm.RequestStatusBadge);
+            Assert.Equal(4, vm.TimelineSteps.Count);
+            Assert.Equal("WORKSHOP", vm.TimelineSteps[3].BadgeText);
+        }
     }
 }

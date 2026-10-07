@@ -160,8 +160,7 @@ namespace SharedCore.Services
             catch (Exception ex)
             {
                 sw.Stop();
-                var msg = ex.InnerException?.Message ?? ex.Message;
-                return (false, $"Tidak dapat terhubung ({msg})", sw.ElapsedMilliseconds);
+                return (false, FormatConnectionException(ex), sw.ElapsedMilliseconds);
             }
         }
 
@@ -177,7 +176,30 @@ namespace SharedCore.Services
             _httpClient.DefaultRequestHeaders.Authorization = null;
         }
 
-        public bool IsAuthenticated => !string.IsNullOrEmpty(_authToken);
+        public static string FormatConnectionException(Exception ex)
+        {
+            if (ex is TaskCanceledException || ex is TimeoutException)
+            {
+                return "Koneksi ke server PT JTS melebihi batas waktu (timeout). Pastikan koneksi jaringan stabil.";
+            }
+
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            if (msg.Contains("refused", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("actively refused", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("No connection could be made", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("tidak dapat terhubung", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Tidak dapat terhubung ke server PT JTS. Pastikan backend aktif dan URL server sesuai.";
+            }
+
+            if (msg.Contains("Name or service not known", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("No such host", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Alamat host server backend tidak ditemukan. Periksa pengaturan URL server.";
+            }
+
+            return $"Tidak dapat terhubung ke server backend: {msg}";
+        }
 
         private string ExtractErrorMessage(string resBody, int statusCode)
         {
@@ -252,7 +274,7 @@ namespace SharedCore.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"Tidak dapat terhubung ke server backend (Port 8000): {ex.Message}");
+                throw new Exception(FormatConnectionException(ex));
             }
 
             var resBody = await response.Content.ReadAsStringAsync();
@@ -298,7 +320,7 @@ namespace SharedCore.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"Tidak dapat terhubung ke server backend (Port 8000): {ex.Message}");
+                throw new Exception(FormatConnectionException(ex));
             }
 
             var resBody = await response.Content.ReadAsStringAsync();

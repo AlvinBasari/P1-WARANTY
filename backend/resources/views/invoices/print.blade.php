@@ -3,233 +3,411 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice Perbaikan & Klaim Garansi - {{ $invoice->invoice_number }}</title>
+    <title>Faktur Servis Resmi & Jaminan Garansi - {{ $invoice->invoice_number }}</title>
     <style>
         @page {
             size: A4;
-            margin: 15mm;
+            margin: 12mm 15mm;
         }
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
         body {
-            background-color: #f8fafc;
-            color: #0f172a;
-            font-size: 13px;
+            background-color: #F8FAFC;
+            color: #0F172A;
+            font-size: 12px;
             line-height: 1.5;
-            padding: 20px;
+            padding: 24px;
         }
         .invoice-container {
-            max-width: 800px;
+            max-width: 820px;
             margin: 0 auto;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e2e8f0;
+            background: #FFFFFF;
+            border: 1px solid #CBD5E1;
+            border-radius: 4px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
             overflow: hidden;
         }
-        .header {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #ffffff;
-            padding: 30px;
-            position: relative;
+
+        /* Formal Kop Surat Perusahaan */
+        .kop-header {
+            padding: 24px 30px 20px;
+            border-bottom: 2px solid #0F172A;
+            background: #FFFFFF;
         }
-        .header-top {
+        .kop-top {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            gap: 20px;
         }
-        .company-title {
-            font-size: 22px;
+        .company-identity {
+            flex: 1;
+        }
+        .company-brand-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .company-logo-badge {
+            background: #0F172A;
+            color: #FFFFFF;
+            font-size: 13px;
             font-weight: 800;
-            letter-spacing: -0.5px;
-            color: #38bdf8;
-        }
-        .company-subtitle {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-top: 4px;
-        }
-        .invoice-badge-box {
-            text-align: right;
-        }
-        .invoice-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #ffffff;
             letter-spacing: 1px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Courier New', monospace;
         }
-        .invoice-num {
-            font-size: 14px;
+        .company-name {
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            color: #0F172A;
+        }
+        .company-dept {
+            font-size: 11px;
             font-weight: 600;
-            color: #38bdf8;
-            font-family: monospace;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .company-meta {
+            font-size: 10.5px;
+            color: #64748B;
+            line-height: 1.45;
+        }
+
+        .doc-identity {
+            text-align: right;
+            min-width: 250px;
+        }
+        .doc-title {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            color: #0F172A;
+            text-transform: uppercase;
+        }
+        .doc-subtitle {
+            font-size: 10.5px;
+            color: #64748B;
+            font-weight: 600;
+            margin-top: 2px;
+            letter-spacing: 0.3px;
+        }
+        .doc-number {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: #0F172A;
+            background: #F1F5F9;
+            padding: 4px 8px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-top: 6px;
+            border: 1px solid #E2E8F0;
+        }
+        .doc-date {
+            font-size: 10.5px;
+            color: #64748B;
             margin-top: 4px;
         }
+
+        /* Info Grid (Pelanggan & Perangkat) */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 24px 30px;
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #E2E8F0;
+            background: #FAFAFA;
         }
-        .info-block h4 {
-            font-size: 11px;
+        .info-block {
+            padding: 16px 30px;
+        }
+        .info-block:first-child {
+            border-right: 1px solid #E2E8F0;
+        }
+        .info-title {
+            font-size: 10px;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            color: #64748b;
+            color: #475569;
             margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 4px;
+            font-size: 11.5px;
+        }
+        .info-label {
+            width: 110px;
+            color: #64748B;
+            flex-shrink: 0;
+        }
+        .info-value {
+            color: #0F172A;
+            font-weight: 500;
+            flex: 1;
+        }
+        .info-value.bold {
             font-weight: 700;
         }
-        .info-block p {
-            margin-bottom: 3px;
-            color: #1e293b;
-            font-size: 12.5px;
+        .info-value code {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background: #E2E8F0;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 11px;
         }
-        .info-block .bold {
-            font-weight: 600;
-        }
+
+        /* Items Table */
         .content {
-            padding: 30px;
+            padding: 24px 30px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
         th {
-            background: #f1f5f9;
-            color: #475569;
-            text-transform: uppercase;
-            font-size: 11px;
+            background: #F1F5F9;
+            color: #334155;
+            font-size: 10.5px;
             font-weight: 700;
+            text-transform: uppercase;
             letter-spacing: 0.5px;
-            padding: 12px 14px;
+            padding: 10px 12px;
             text-align: left;
-            border-bottom: 2px solid #cbd5e1;
-        }
-        th.text-right, td.text-right {
-            text-align: right;
-        }
-        th.text-center, td.text-center {
-            text-align: center;
+            border-top: 1px solid #CBD5E1;
+            border-bottom: 2px solid #0F172A;
         }
         td {
-            padding: 14px;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 11px 12px;
+            border-bottom: 1px solid #E2E8F0;
+            font-size: 11.5px;
             vertical-align: middle;
         }
-        tr:hover {
-            background-color: #f8fafc;
+        .text-right {
+            text-align: right;
         }
+        .text-center {
+            text-align: center;
+        }
+
+        /* Badges */
         .badge {
             display: inline-block;
             padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 10px;
+            border-radius: 3px;
+            font-size: 9.5px;
             font-weight: 700;
+            letter-spacing: 0.3px;
             text-transform: uppercase;
         }
-        .badge-warranty {
-            background-color: #dcfce7;
-            color: #15803d;
-            border: 1px solid #86efac;
+        .badge-covered {
+            background: #F1F5F9;
+            color: #0F172A;
+            border: 1px solid #94A3B8;
         }
-        .badge-client {
-            background-color: #fee2e2;
-            color: #b91c1c;
-            border: 1px solid #fca5a5;
+        .badge-charge {
+            background: #FEF2F2;
+            color: #991B1B;
+            border: 1px solid #FCA5A5;
         }
-        .summary-card {
+
+        /* Financial Calculation */
+        .calculation-section {
             display: flex;
             justify-content: flex-end;
             margin-bottom: 24px;
         }
-        .summary-table {
-            width: 340px;
+        .calc-table {
+            width: 360px;
             border-collapse: collapse;
         }
-        .summary-table td {
-            padding: 8px 12px;
+        .calc-table td {
+            padding: 6px 10px;
             border: none;
-        }
-        .summary-table .border-top {
-            border-top: 1px solid #cbd5e1;
-        }
-        .summary-table .grand-total {
-            font-size: 16px;
-            font-weight: 800;
-            background: #f0fdf4;
-            color: #166534;
-            border-radius: 8px;
-        }
-        .stamp-box {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 20px;
-            border-top: 2px dashed #e2e8f0;
-        }
-        .terms {
-            max-width: 460px;
-            font-size: 11px;
-            color: #64748b;
-        }
-        .terms h5 {
             font-size: 11.5px;
-            color: #334155;
-            margin-bottom: 4px;
-            font-weight: 700;
         }
-        .official-seal {
-            border: 2px solid #0284c7;
-            border-radius: 8px;
-            padding: 10px 16px;
-            text-align: center;
-            background: #f0f9ff;
-            color: #0369a1;
+        .calc-table .label {
+            color: #475569;
         }
-        .official-seal .title {
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+        .calc-table .val {
+            text-align: right;
+            font-weight: 600;
+            font-family: 'Consolas', 'Courier New', monospace;
+            color: #0F172A;
         }
-        .official-seal .status {
+        .calc-table .discount-row td {
+            color: #0F172A;
+            font-weight: 600;
+        }
+        .calc-table .grand-row {
+            border-top: 2px solid #0F172A;
+            border-bottom: 2px solid #0F172A;
+            background: #F8FAFC;
+        }
+        .calc-table .grand-row td {
+            padding: 10px;
             font-size: 13px;
             font-weight: 800;
-            margin: 4px 0;
-            color: #0284c7;
         }
-        .actions-bar {
-            background: #f1f5f9;
-            padding: 16px 30px;
+        .calc-table .grand-row .val {
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .terbilang-box {
+            background: #F8FAFC;
+            border-left: 3px solid #0F172A;
+            padding: 8px 14px;
+            margin-bottom: 24px;
+            font-size: 11px;
+            color: #334155;
+        }
+        .terbilang-box strong {
+            color: #0F172A;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* Signatures & Seal Section */
+        .signatures-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding-top: 16px;
+            border-top: 1px solid #CBD5E1;
+            margin-bottom: 20px;
+        }
+        .sig-block {
+            text-align: center;
+        }
+        .sig-role {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .sig-space {
+            height: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sig-digital-stamp {
+            border: 1.5px solid #0F172A;
+            border-radius: 4px;
+            padding: 8px 14px;
+            background: #F8FAFC;
+            display: inline-block;
+            text-align: center;
+        }
+        .stamp-company {
+            font-size: 9.5px;
+            font-weight: 800;
+            color: #0F172A;
+            letter-spacing: 0.5px;
+        }
+        .stamp-verif {
+            font-size: 11px;
+            font-weight: 800;
+            color: #0F172A;
+            letter-spacing: 0.8px;
+            margin: 2px 0;
+            padding: 2px 0;
+            border-top: 1px solid #CBD5E1;
+            border-bottom: 1px solid #CBD5E1;
+        }
+        .stamp-meta {
+            font-size: 8.5px;
+            color: #64748B;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        .sig-name {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #0F172A;
+            border-top: 1px solid #94A3B8;
+            padding-top: 4px;
+            display: inline-block;
+            min-width: 200px;
+        }
+        .sig-sub {
+            font-size: 10px;
+            color: #64748B;
+            margin-top: 2px;
+        }
+
+        /* Legal Terms */
+        .legal-terms {
+            border-top: 1px dashed #CBD5E1;
+            padding-top: 14px;
+            font-size: 10px;
+            color: #64748B;
+            line-height: 1.5;
+        }
+        .legal-terms-title {
+            font-weight: 700;
+            color: #334155;
+            text-transform: uppercase;
+            font-size: 9.5px;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .legal-terms ol {
+            padding-left: 16px;
+        }
+        .legal-terms li {
+            margin-bottom: 2px;
+        }
+
+        /* Action Toolbar (Screen only) */
+        .action-toolbar {
+            background: #0F172A;
+            color: #FFFFFF;
+            padding: 14px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-top: 1px solid #e2e8f0;
+        }
+        .action-toolbar-info {
+            font-size: 11.5px;
+            color: #94A3B8;
         }
         .btn-print {
-            background: #0284c7;
-            color: #ffffff;
+            background: #FFFFFF;
+            color: #0F172A;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 8px 18px;
+            border-radius: 4px;
             font-weight: 700;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+            letter-spacing: 0.3px;
+            transition: background-color 0.15s ease;
         }
         .btn-print:hover {
-            background: #0369a1;
+            background: #E2E8F0;
         }
+
         @media print {
             body {
-                background: #ffffff;
+                background: #FFFFFF;
                 padding: 0;
             }
             .invoice-container {
@@ -237,7 +415,7 @@
                 border: none;
                 max-width: 100%;
             }
-            .actions-bar {
+            .action-toolbar {
                 display: none;
             }
         }
@@ -246,41 +424,76 @@
 <body>
 
 <div class="invoice-container">
-    <!-- Header -->
-    <div class="header">
-        <div class="header-top">
-            <div>
-                <div class="company-title">PT JAYA TEKNOLOGI SOLUSINDO</div>
-                <div class="company-subtitle">Sentra Layanan &amp; Klaim Garansi Resmi Hardware Terpadu</div>
-                <div style="font-size: 11px; color: #94a3b8; margin-top: 6px;">
-                    Cyber 2 Tower Lt. 18, Jl. H.R. Rasuna Said, Jakarta Selatan • Hotline: (021) 5088-7799
+    <!-- Action Toolbar (Hidden during print) -->
+    <div class="action-toolbar">
+        <div class="action-toolbar-info">
+            Dokumen Arsip Resmi • Sistem Garansi & Layanan Purna Jual PT JTS
+        </div>
+        <button class="btn-print" onclick="window.print()">Cetak Dokumen / Simpan PDF</button>
+    </div>
+
+    <!-- Kop Surat Resmi Perusahaan -->
+    <div class="kop-header">
+        <div class="kop-top">
+            <div class="company-identity">
+                <div class="company-brand-row">
+                    <span class="company-logo-badge">PT JTS</span>
+                    <span class="company-name">PT JAYA TEKNOLOGI SOLUSI</span>
+                </div>
+                <div class="company-dept">Divisi Layanan Purna Jual &amp; Jaminan Garansi Resmi Hardware</div>
+                <div class="company-meta">
+                    Gedung Cyber 2 Tower Lt. 18, Jl. H.R. Rasuna Said Blok X-5 No. 13, Jakarta Selatan 12950<br>
+                    Telepon: (021) 5088-7799 • Email: aftersales@jts.co.id • NPWP: 01.884.223.4-015.000
                 </div>
             </div>
-            <div class="invoice-badge-box">
-                <div class="invoice-title">FAKTUR SERVIS RESMI</div>
-                <div class="invoice-num">{{ $invoice->invoice_number }}</div>
-                <div style="font-size: 11px; color: #cbd5e1; margin-top: 4px;">
-                    Tanggal: {{ \Carbon\Carbon::parse($invoice->issue_date)->format('d M Y, H:i') }} WIB
-                </div>
+            <div class="doc-identity">
+                <div class="doc-title">FAKTUR SERVIS RESMI</div>
+                <div class="doc-subtitle">BUKTI KLAIM GARANSI &amp; SUKU CADANG</div>
+                <div class="doc-number">{{ $invoice->invoice_number }}</div>
+                <div class="doc-date">Tanggal Terbit: {{ \Carbon\Carbon::parse($invoice->issue_date)->format('d F Y') }}</div>
             </div>
         </div>
     </div>
 
-    <!-- Info Grid -->
+    <!-- Info Grid Pelanggan & Perangkat -->
     <div class="info-grid">
         <div class="info-block">
-            <h4>Data Pelanggan &amp; Lokasi</h4>
-            <p class="bold">{{ $invoice->user->name ?? 'Pelanggan JTS' }}</p>
-            <p>Email: {{ $invoice->user->email ?? '-' }}</p>
-            <p>Telp / WA: {{ $invoice->user->phone ?? '-' }}</p>
-            <p>Alamat: {{ $invoice->user->address ?? 'Alamat Terkalibrasi GPS' }}</p>
+            <div class="info-title">IDENTITAS PELANGGAN &amp; PENERIMA</div>
+            <div class="info-row">
+                <span class="info-label">Nama Lengkap</span>
+                <span class="info-value bold">: {{ $invoice->user->name ?? 'Pelanggan Terdaftar' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Kontak / Telepon</span>
+                <span class="info-value">: {{ $invoice->user->phone ?? '-' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Email Terdaftar</span>
+                <span class="info-value">: {{ $invoice->user->email ?? '-' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Alamat Penjemputan</span>
+                <span class="info-value">: {{ $invoice->user->address ?? 'Alamat Terdaftar Sistem' }}</span>
+            </div>
         </div>
         <div class="info-block">
-            <h4>Informasi Unit &amp; Garansi</h4>
-            <p><span class="bold">Model Unit:</span> {{ $invoice->device->model ?? '-' }}</p>
-            <p><span class="bold">Serial Number:</span> <code>{{ $invoice->device->serial_number ?? '-' }}</code></p>
-            <p><span class="bold">ID Hardware / BIOS:</span> <code>{{ $invoice->device->hardware_id ?? '-' }}</code></p>
-            <p><span class="bold">Tiket Perbaikan:</span> #{{ $invoice->repair_request_id }} (Tipe: {{ strtoupper($invoice->repairRequest->type ?? 'ON_SITE') }})</p>
+            <div class="info-title">DATA PERANGKAT &amp; PENANGANAN</div>
+            <div class="info-row">
+                <span class="info-label">Model Perangkat</span>
+                <span class="info-value bold">: {{ $invoice->device->model ?? '-' }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Nomor Seri (S/N)</span>
+                <span class="info-value">: <code>{{ $invoice->device->serial_number ?? '-' }}</code></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Hardware / BIOS ID</span>
+                <span class="info-value">: <code>{{ $invoice->device->hardware_id ?? '-' }}</code></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">No. Tiket Perbaikan</span>
+                <span class="info-value bold">: #{{ $invoice->repair_request_id }} (Tipe: {{ strtoupper($invoice->repairRequest->type ?? 'ON_SITE') }})</span>
+            </div>
         </div>
     </div>
 
@@ -289,94 +502,110 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 5%;">No</th>
-                    <th style="width: 40%;">Rincian Tindakan / Suku Cadang</th>
-                    <th class="text-center" style="width: 15%;">Garansi</th>
-                    <th class="text-center" style="width: 8%;">Qty</th>
-                    <th class="text-right" style="width: 16%;">Harga Satuan</th>
-                    <th class="text-right" style="width: 16%;">Subtotal</th>
+                    <th style="width: 5%;" class="text-center">No</th>
+                    <th style="width: 44%;">Deskripsi Suku Cadang / Tindakan Servis</th>
+                    <th style="width: 18%;" class="text-center">Status Cakupan</th>
+                    <th style="width: 6%;" class="text-center">Qty</th>
+                    <th style="width: 13%;" class="text-right">Harga Satuan</th>
+                    <th style="width: 14%;" class="text-right">Subtotal</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($invoice->items as $idx => $item)
                 <tr>
-                    <td class="text-center">{{ $idx + 1 }}</td>
+                    <td class="text-center" style="color: #64748B; font-weight: 600;">{{ $idx + 1 }}</td>
                     <td>
-                        <div style="font-weight: 600; color: #0f172a;">{{ $item->item_name }}</div>
+                        <div style="font-weight: 700; color: #0F172A;">{{ $item->item_name }}</div>
                         @if ($item->item_code)
-                            <div style="font-size: 11px; color: #64748b;">Part No: <code>{{ $item->item_code }}</code></div>
+                            <div style="font-size: 10.5px; color: #64748B; font-family: 'Consolas', monospace; margin-top: 1px;">Part Code: {{ $item->item_code }}</div>
                         @endif
                         @if ($item->notes)
-                            <div style="font-size: 11px; color: #475569; font-style: italic;">{{ $item->notes }}</div>
+                            <div style="font-size: 10.5px; color: #475569; margin-top: 2px;">Catatan: {{ $item->notes }}</div>
                         @endif
                     </td>
                     <td class="text-center">
                         @if ($item->is_covered_by_warranty)
-                            <span class="badge badge-warranty">🛡️ Tercover Garansi</span>
+                            <span class="badge badge-covered">DIJAMIN GARANSI</span>
                         @else
-                            <span class="badge badge-client">⚠️ Biaya Klien</span>
+                            <span class="badge badge-charge">BIAYA PELANGGAN</span>
                         @endif
                     </td>
-                    <td class="text-center">{{ $item->quantity }}</td>
-                    <td class="text-right">Rp {{ number_format($item->unit_price, 0, ',', '.') }}</td>
-                    <td class="text-right">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
+                    <td class="text-center" style="font-weight: 600;">{{ $item->quantity }}</td>
+                    <td class="text-right" style="font-family: 'Consolas', monospace;">Rp {{ number_format($item->unit_price, 0, ',', '.') }}</td>
+                    <td class="text-right" style="font-family: 'Consolas', monospace; font-weight: 600;">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
 
         <!-- Summary Calculation -->
-        <div class="summary-card">
-            <table class="summary-table">
+        <div class="calculation-section">
+            <table class="calc-table">
                 <tr>
-                    <td style="color: #64748b;">Subtotal Biaya Normal:</td>
-                    <td class="text-right bold">Rp {{ number_format($invoice->subtotal_amount, 0, ',', '.') }}</td>
+                    <td class="label">Subtotal Nilai Pekerjaan:</td>
+                    <td class="val">Rp {{ number_format($invoice->subtotal_amount, 0, ',', '.') }}</td>
                 </tr>
-                <tr>
-                    <td style="color: #16a34a; font-weight: 600;">Jaminan Garansi Resmi PT JTS:</td>
-                    <td class="text-right bold" style="color: #16a34a;">- Rp {{ number_format($invoice->warranty_discount_amount, 0, ',', '.') }}</td>
+                <tr class="discount-row">
+                    <td class="label">Potongan Garansi Resmi PT JTS:</td>
+                    <td class="val">- Rp {{ number_format($invoice->warranty_discount_amount, 0, ',', '.') }}</td>
                 </tr>
                 @if ($invoice->tax_amount > 0)
                 <tr>
-                    <td style="color: #64748b;">PPN (11%):</td>
-                    <td class="text-right bold">Rp {{ number_format($invoice->tax_amount, 0, ',', '.') }}</td>
+                    <td class="label">PPN (11%):</td>
+                    <td class="val">Rp {{ number_format($invoice->tax_amount, 0, ',', '.') }}</td>
                 </tr>
                 @endif
-                <tr class="border-top grand-total">
-                    <td style="padding: 12px;">Total Tagihan Klien:</td>
-                    <td class="text-right" style="padding: 12px;">Rp {{ number_format($invoice->total_payable_amount, 0, ',', '.') }}</td>
+                <tr class="grand-row">
+                    <td>TOTAL TAGIHAN PELANGGAN:</td>
+                    <td class="val">Rp {{ number_format($invoice->total_payable_amount, 0, ',', '.') }}</td>
                 </tr>
             </table>
         </div>
 
-        <!-- Stamp & Terms -->
-        <div class="stamp-box">
-            <div class="terms">
-                <h5>Syarat &amp; Ketentuan Garansi Resmi:</h5>
-                <p>1. Seluruh suku cadang resmi yang diganti terdaftar dan dilindungi jaminan garansi 1 tahun.</p>
-                <p>2. Pemotongan jaminan garansi 100% berlaku otomatis sesuai cakupan perlindungan aktif unit.</p>
-                <p>3. Dokumen ini sah dan diterbitkan secara digital oleh Pusat Servis Resmi PT Jaya Teknologi Solusindo.</p>
-            </div>
-            <div class="official-seal">
-                <div class="title">VERIFIKASI SISTEM GARANSI</div>
-                <div class="status">
-                    @if ($invoice->total_payable_amount <= 0)
-                        ✓ LUNAS (DIJAMIN 100%)
-                    @else
-                        TAGIHAN KLIEN
-                    @endif
-                </div>
-                <div style="font-size: 10px; color: #64748b;">Teknisi: {{ $invoice->technician->name ?? 'Tim Servis Resmi' }}</div>
-            </div>
+        <!-- Terbilang Box -->
+        <div class="terbilang-box">
+            <strong>Keterangan Beban Pembayaran:</strong>
+            @if ($invoice->total_payable_amount <= 0)
+                Seluruh biaya suku cadang dan jasa teknisi sebesar Rp {{ number_format($invoice->subtotal_amount, 0, ',', '.') }} ditanggung penuh (100%) oleh fasilitas Garansi Resmi Hardware PT Jaya Teknologi Solusi. Pelanggan tidak dikenakan biaya apapun.
+            @else
+                Total kewajiban bayar sebesar Rp {{ number_format($invoice->total_payable_amount, 0, ',', '.') }} untuk penggantian komponen non-garansi / masa garansi berakhir.
+            @endif
         </div>
-    </div>
 
-    <!-- Actions Bar -->
-    <div class="actions-bar">
-        <div style="font-size: 12px; color: #64748b;">
-            💡 Simpan atau cetak faktur ini sebagai arsip riwayat servis perangkat Anda.
+        <!-- Signatures & Official Validation -->
+        <div class="signatures-section">
+            <div class="sig-block">
+                <div class="sig-role">Penerima / Pemilik Unit</div>
+                <div class="sig-space">
+                    <span style="font-size: 10px; color: #94A3B8; font-style: italic;">(Tanda tangan saat serah terima unit)</span>
+                </div>
+                <div class="sig-name">{{ $invoice->user->name ?? 'Pelanggan Terdaftar' }}</div>
+                <div class="sig-sub">Penerima Unit Komputer</div>
+            </div>
+
+            <div class="sig-block">
+                <div class="sig-role">Pusat Layanan Purna Jual PT JTS</div>
+                <div class="sig-space">
+                    <div class="sig-digital-stamp">
+                        <div class="stamp-company">PT JAYA TEKNOLOGI SOLUSI</div>
+                        <div class="stamp-verif">PENGESAHAN ELEKTRONIK SAH</div>
+                        <div class="stamp-meta">ID: JTS-SVC-{{ str_pad($invoice->id, 5, '0', STR_PAD_LEFT) }} • {{ \Carbon\Carbon::parse($invoice->issue_date)->format('Y-m-d') }}</div>
+                    </div>
+                </div>
+                <div class="sig-name">{{ $invoice->technician->name ?? 'Tim Servis Resmi Hardware' }}</div>
+                <div class="sig-sub">Petugas Teknisi Resmi Terverifikasi</div>
+            </div>
         </div>
-        <button class="btn-print" onclick="window.print()">🖨️ Cetak / Simpan sebagai PDF</button>
+
+        <!-- Formal Terms & Conditions -->
+        <div class="legal-terms">
+            <div class="legal-terms-title">Ketentuan &amp; Jaminan Layanan Servis Resmi PT JTS:</div>
+            <ol>
+                <li>Suku cadang resmi (OEM) yang diganti dalam faktur ini memperoleh garansi pergantian suku cadang selama 1 (satu) tahun terhitung sejak tanggal faktur.</li>
+                <li>Faktur elektronik ini merupakan dokumen sah serah terima dan bukti riwayat klaim garansi yang diakui oleh seluruh pusat servis jaringan PT Jaya Teknologi Solusi.</li>
+                <li>Garansi tidak mencakup kerusakan fisik akibat bencana alam, kelalaian pengguna (terjatuh, terkena cairan), atau modifikasi perangkat oleh pihak ketiga tanpa persetujuan resmi.</li>
+            </ol>
+        </div>
     </div>
 </div>
 

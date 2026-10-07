@@ -136,6 +136,14 @@ namespace TechnicianApp.ViewModels
             ApplyFilter();
         }
 
+        [RelayCommand]
+        public void ResetFilter()
+        {
+            SearchKeyword = string.Empty;
+            SelectedStatusFilter = "all";
+            SelectTab("all");
+        }
+
         public void ApplyFilter()
         {
             var query = _allTickets.AsEnumerable();

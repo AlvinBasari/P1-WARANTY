@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '../services/api';
@@ -12,10 +12,18 @@ import {
   Cpu, 
   User, 
   Phone, 
-  Navigation
+  Navigation,
+  Camera,
+  Upload,
+  Trash2,
+  AlertCircle,
+  FileText,
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 import { DiagnosticPulse } from '../components/DiagnosticPulse';
 import { CopyButton } from '../components/CopyButton';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 export const PublicClaimPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -33,6 +41,15 @@ export const PublicClaimPage: React.FC = () => {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [locationLabel, setLocationLabel] = useState('Lokasi Penjemputan');
+
+  // Photo Attachments (FR-08: Bukti foto fisik unit mati/rusak)
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Modals state
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [submittedRequest, setSubmittedRequest] = useState<any | null>(null);
@@ -109,34 +126,106 @@ export const PublicClaimPage: React.FC = () => {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) return;
+  // Photo Upload Handler
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    if (!description || description.length < 5) {
-      toast.error('Harap jelaskan kerusakan minimal 5 karakter.');
+    if (attachments.length + files.length > 4) {
+      toast.error('Maksimal lampiran adalah 4 foto bukti kerusakan.');
       return;
     }
 
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`Berkas "${file.name}" bukan format gambar yang valid.`);
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`File "${file.name}" melebihi batas 5MB.`);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          setAttachments((prev) => [...prev, base64]);
+          toast.success(`Foto "${file.name}" berhasil dilampirkan.`);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleValidateForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+
+    if (!description.trim() || description.trim().length < 10) {
+      toast.error('Jelaskan gejala kerusakan minimal 10 karakter.');
+      return;
+    }
+
+    if (!name.trim() || name.trim().length < 3) {
+      toast.error('Harap masukkan nama lengkap Anda (minimal 3 karakter).');
+      return;
+    }
+
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      toast.error('Harap masukkan nomor HP/WhatsApp yang valid (minimal 10 digit).');
+      return;
+    }
+
+    if (!address.trim() || address.trim().length < 10) {
+      toast.error('Harap isi alamat penjemputan unit secara lengkap.');
+      return;
+    }
+
+    // All valid -> open confirmation popup
+    setShowSubmitConfirm(true);
+  };
+
+  const executeSubmit = async () => {
+    setShowSubmitConfirm(false);
     setSubmitting(true);
     try {
       const res = await api.post(`/qr/claim/${token}`, {
-        description,
-        name: name || undefined,
-        phone: phone || undefined,
-        address: address || undefined,
+        description: description.trim(),
+        name: name.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+        attachments: attachments,
+        location_lat: latitude || undefined,
+        location_lng: longitude || undefined,
         latitude: latitude || undefined,
         longitude: longitude || undefined,
         location_label: locationLabel || undefined,
       });
 
       setSubmittedRequest(res.data.request);
-      toast.success(`Tiket klaim #${res.data.request?.id} berhasil dibuat!`);
+      toast.success(`Laporan klaim servis #${res.data.request?.id} berhasil diajukan!`);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Gagal mengirimkan laporan klaim.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const executeResetForm = () => {
+    setDescription('');
+    setName('');
+    setPhone('');
+    setAddress('');
+    setLatitude(null);
+    setLongitude(null);
+    setAttachments([]);
+    setShowResetConfirm(false);
+    toast.info('Formulir berhasil direset.');
   };
 
   if (loading) {
@@ -169,7 +258,7 @@ export const PublicClaimPage: React.FC = () => {
   if (submittedRequest) {
     const latDisplay = latitude ?? submittedRequest.latitude ?? -6.2416;
     const lngDisplay = longitude ?? submittedRequest.longitude ?? 106.9924;
-    const deviceName = deviceData?.device?.model || submittedRequest.device?.model || 'Lenovo ThinkCentre M700 (10MAS0FB00)';
+    const deviceName = deviceData?.device?.model || submittedRequest.device?.model || 'Lenovo ThinkCentre M700';
     const serialNum = deviceData?.device?.serial_number || submittedRequest.device?.serial_number || 'SN-LEN-112233';
 
     return (
@@ -200,6 +289,7 @@ export const PublicClaimPage: React.FC = () => {
                 <span className="font-mono text-xs font-semibold text-circuit bg-circuit/10 px-2.5 py-0.5 rounded-btn">
                   Nomor Tiket #{submittedRequest.id}
                 </span>
+                <CopyButton text={submittedRequest.id.toString()} label="Nomor Tiket" />
                 <DiagnosticPulse status="active" />
               </div>
             </div>
@@ -222,6 +312,10 @@ export const PublicClaimPage: React.FC = () => {
               <div className="flex justify-between items-center">
                 <span className="text-ink-subtle">Nomor Seri (SN):</span>
                 <span className="font-mono text-ink font-semibold">{serialNum}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-ink-subtle">Foto Bukti Terlampir:</span>
+                <span className="font-mono text-circuit font-semibold">{attachments.length} Foto Terunggah</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-ink-subtle">Koordinat Penjemputan:</span>
@@ -258,7 +352,28 @@ export const PublicClaimPage: React.FC = () => {
             <div className="pt-2">
               <button 
                 type="button"
-                onClick={() => toast.success('Tautan pelacakan tiket berhasil disalin ke clipboard!')}
+                onClick={async () => {
+                  const url = window.location.href;
+                  try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                      await navigator.clipboard.writeText(url);
+                    } else {
+                      const ta = document.createElement('textarea');
+                      ta.value = url;
+                      ta.style.position = 'fixed';
+                      ta.style.left = '-999999px';
+                      ta.style.top = '-999999px';
+                      document.body.appendChild(ta);
+                      ta.focus();
+                      ta.select();
+                      document.execCommand('copy');
+                      ta.remove();
+                    }
+                    toast.success('Tautan pelacakan tiket berhasil disalin ke clipboard!');
+                  } catch {
+                    toast.error('Gagal menyalin tautan');
+                  }
+                }}
                 className="w-full py-2.5 px-4 bg-signal hover:bg-signal-hover text-white rounded-btn text-xs font-semibold shadow-card flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <span>Simpan Tautan Lacak Tiket</span>
@@ -329,42 +444,124 @@ export const PublicClaimPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Expired Warranty Warning Banner */}
+        {!isWarrantyActive && (
+          <div className="p-4 bg-alert-subtle border border-alert-border rounded-card text-xs text-ink flex items-start gap-3 shadow-sm">
+            <AlertCircle className="w-5 h-5 text-alert shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <strong className="text-alert font-bold block">Pemberitahuan Status Garansi Non-Aktif:</strong>
+              <p className="text-ink-muted leading-relaxed text-[11px]">
+                Masa garansi resmi unit ini telah berakhir pada <b>{warranty?.warranty_end || 'tanggal tertera'}</b>. 
+                Anda tetap dapat melanjutkan pengajuan penjemputan unit untuk diperbaiki di Service Center resmi PT JTS, namun pergantian suku cadang dan jasa teknisi akan dikenakan biaya reguler setelah diagnosa selesai.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Damage Claim Form */}
         <div className="bg-paper-card rounded-card border border-mist shadow-card p-6 space-y-5">
-          <div>
-            <h3 className="text-sm font-display font-bold text-ink">Formulir Laporan Kerusakan Unit</h3>
-            <p className="text-xs text-ink-muted mt-0.5">
-              Isi gejala kerusakan pada unit mati total/layar rusak untuk dijadwalkan penjemputan fisik.
-            </p>
+          <div className="flex items-center justify-between pb-3 border-b border-mist">
+            <div>
+              <h3 className="text-sm font-display font-bold text-ink">Formulir Laporan Kerusakan Unit</h3>
+              <p className="text-xs text-ink-muted mt-0.5">
+                Isi gejala kerusakan pada unit mati total/layar rusak untuk dijadwalkan penjemputan fisik.
+              </p>
+            </div>
+            {(description || name || phone || address || attachments.length > 0) && (
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(true)}
+                className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-fault px-2 py-1 rounded hover:bg-fault-subtle transition-colors"
+                title="Reset formulir"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            )}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleValidateForm} className="space-y-4">
             <div className="space-y-1">
-              <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-ink-subtle">
-                JELASKAN GEJALA KERUSAKAN *
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-ink-subtle">
+                  JELASKAN GEJALA KERUSAKAN *
+                </label>
+                <span className="text-[10px] text-ink-subtle">Min. 10 karakter</span>
+              </div>
               <textarea
                 required
-                rows={4}
+                rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Contoh: Unit mati total, tidak mau menyala sama sekali saat tombol power ditekan..."
+                placeholder="Contoh: Unit mati total, tidak mau menyala sama sekali saat tombol power ditekan, indikator lampu adaptor mati..."
                 className="w-full text-xs p-3 bg-paper border border-mist rounded-btn focus:outline-none focus:border-signal text-ink placeholder:text-ink-subtle"
               />
+            </div>
+
+            {/* Photo Attachments Upload Section (FR-08) */}
+            <div className="space-y-2 p-3.5 bg-paper rounded-card border border-mist">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-ink-subtle flex items-center gap-1">
+                  <Camera className="w-3.5 h-3.5 text-signal" />
+                  <span>FOTO BUKTI FISIK UNIT MATI / RUSAK (OPSIONAL)</span>
+                </span>
+                <span className="text-[10px] text-ink-subtle">{attachments.length}/4 Foto</span>
+              </div>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                onChange={handlePhotoSelect}
+                className="hidden"
+              />
+
+              {/* Upload Trigger Button */}
+              {attachments.length < 4 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-2.5 px-3 border border-dashed border-mist hover:border-signal bg-white hover:bg-mist-light/50 rounded-btn text-xs text-ink-muted hover:text-signal font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Ambil Foto / Unggah dari Galeri (Maks 5MB per foto)</span>
+                </button>
+              )}
+
+              {/* Attachments Preview Grid */}
+              {attachments.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+                  {attachments.map((imgSrc, idx) => (
+                    <div key={idx} className="relative group rounded-card overflow-hidden border border-mist bg-paper aspect-video flex items-center justify-center">
+                      <img src={imgSrc} alt={`Bukti ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setPhotoToDelete(idx)}
+                        className="absolute top-1 right-1 p-1 bg-ink/75 hover:bg-fault text-white rounded-full transition-colors"
+                        title="Hapus foto"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-ink-subtle">
-                  NAMA LENGKAP
+                  NAMA LENGKAP PEMILIK *
                 </label>
                 <div className="relative">
                   <User className="w-3.5 h-3.5 text-ink-subtle absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
+                    required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Nama Anda"
+                    placeholder="Nama Lengkap Anda"
                     className="w-full text-xs pl-9 pr-3 py-2 bg-paper border border-mist rounded-btn focus:outline-none focus:border-signal text-ink placeholder:text-ink-subtle"
                   />
                 </div>
@@ -372,15 +569,16 @@ export const PublicClaimPage: React.FC = () => {
 
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-ink-subtle">
-                  NOMOR WHATSAPP / HP
+                  NOMOR WHATSAPP / HP *
                 </label>
                 <div className="relative">
                   <Phone className="w-3.5 h-3.5 text-ink-subtle absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="text"
+                    type="tel"
+                    required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="08123456789"
+                    placeholder="Contoh: 08123456789"
                     className="w-full text-xs pl-9 pr-3 py-2 bg-paper border border-mist rounded-btn focus:outline-none focus:border-signal text-ink placeholder:text-ink-subtle"
                   />
                 </div>
@@ -389,13 +587,14 @@ export const PublicClaimPage: React.FC = () => {
 
             <div className="space-y-1">
               <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-ink-subtle">
-                ALAMAT PENJEMPUTAN UNIT
+                ALAMAT PENJEMPUTAN UNIT *
               </label>
               <textarea
+                required
                 rows={2}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Alamat lengkap lokasi penjemputan unit..."
+                placeholder="Alamat lengkap (nama jalan, nomor rumah/gedung, RT/RW, kelurahan, patokan lokasi)..."
                 className="w-full text-xs p-2.5 bg-paper border border-mist rounded-btn focus:outline-none focus:border-signal text-ink placeholder:text-ink-subtle"
               />
             </div>
@@ -411,7 +610,7 @@ export const PublicClaimPage: React.FC = () => {
                   type="button"
                   onClick={handleGetLocation}
                   disabled={gettingLocation}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-mist-light text-circuit border border-mist rounded-btn text-xs font-semibold shadow-card transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-mist-light text-circuit border border-mist rounded-btn text-xs font-semibold shadow-card transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   <Navigation className={`w-3 h-3 text-signal ${gettingLocation ? 'animate-spin' : ''}`} />
                   <span>{gettingLocation ? 'Mencari GPS...' : 'Ambil Titik GPS Saya'}</span>
@@ -424,16 +623,17 @@ export const PublicClaimPage: React.FC = () => {
                   <span className="text-[10px] text-stable font-semibold">✓ TERSIMPAN</span>
                 </div>
               ) : (
-                <p className="text-[11px] text-ink-subtle">
-                  Gunakan tombol di atas untuk memudahkan teknisi menemukan lokasi rumah/kantor Anda secara presisi.
-                </p>
+                <div className="text-[11px] text-ink-subtle flex items-start gap-1.5 pt-0.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-alert shrink-0 mt-0.5" />
+                  <span>Tekan tombol di atas untuk merekam koordinat penjemputan presisi, atau kosongkan jika ingin mengandalkan alamat teks saja.</span>
+                </div>
               )}
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-signal hover:bg-signal-hover text-white text-xs font-semibold rounded-btn shadow-card transition-colors disabled:opacity-50 mt-2"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-signal hover:bg-signal-hover text-white text-xs font-semibold rounded-btn shadow-card transition-colors disabled:opacity-50 mt-2 cursor-pointer"
             >
               <Send className="w-3.5 h-3.5" />
               <span>{submitting ? 'Mengirimkan Tiket Klaim...' : 'Kirimkan Permintaan Bantuan Servis'}</span>
@@ -441,6 +641,70 @@ export const PublicClaimPage: React.FC = () => {
           </form>
         </div>
       </div>
+
+      {/* Confirmation Modal Before Submission */}
+      <ConfirmModal
+        isOpen={showSubmitConfirm}
+        onClose={() => setShowSubmitConfirm(false)}
+        onConfirm={executeSubmit}
+        loading={submitting}
+        variant="success"
+        title="Konfirmasi Pengajuan Laporan Klaim Servis"
+        description={
+          <div>
+            <p className="leading-relaxed">
+              Pastikan rincian kontak dan keluhan unit di bawah ini telah akurat. Petugas teknisi PT JTS akan menghubungi Anda untuk konfirmasi penjemputan unit.
+            </p>
+            {!latitude && (
+              <div className="mt-2.5 p-2 bg-alert-subtle border border-alert-border rounded text-[11px] text-alert font-medium flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>Titik GPS belum diatur. Penjemputan akan mengacu pada alamat teks Anda.</span>
+              </div>
+            )}
+          </div>
+        }
+        confirmLabel="Ya, Kirim Laporan Sekarang"
+        cancelLabel="Periksa Kembali"
+        details={[
+          { label: 'Perangkat', value: device?.model || '-' },
+          { label: 'Serial Number', value: device?.serial_number || '-' },
+          { label: 'Pemilik Unit', value: name },
+          { label: 'No. WhatsApp', value: phone },
+          { label: 'Alamat Jemput', value: address },
+          { label: 'Lampiran Foto', value: `${attachments.length} Foto` },
+          { label: 'Titik Lokasi', value: latitude ? `${latitude.toFixed(4)}, ${longitude?.toFixed(4)}` : 'Sesuai Alamat Teks' },
+        ]}
+      />
+
+      {/* Form Reset Confirmation */}
+      <ConfirmModal
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        onConfirm={executeResetForm}
+        variant="warning"
+        title="Konfirmasi Reset Formulir"
+        description="Apakah Anda yakin ingin mengosongkan seluruh isian formulir klaim dan lampiran foto yang sudah dimasukkan?"
+        confirmLabel="Ya, Kosongkan Form"
+        cancelLabel="Batal"
+      />
+
+      {/* Delete Photo Confirmation */}
+      {photoToDelete !== null && (
+        <ConfirmModal
+          isOpen={true}
+          onClose={() => setPhotoToDelete(null)}
+          onConfirm={() => {
+            setAttachments((prev) => prev.filter((_, idx) => idx !== photoToDelete));
+            setPhotoToDelete(null);
+            toast.info('Foto lampiran telah dihapus.');
+          }}
+          variant="danger"
+          title="Hapus Lampiran Foto"
+          description="Apakah Anda yakin ingin menghapus foto bukti kerusakan ini?"
+          confirmLabel="Hapus Foto"
+          cancelLabel="Batal"
+        />
+      )}
     </div>
   );
 };

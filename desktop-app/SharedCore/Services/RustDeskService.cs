@@ -89,6 +89,33 @@ namespace SharedCore.Services
 
         private string? FindRustDeskBinary()
         {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+
+            string[] directCandidates = {
+                Path.Combine(baseDir, "rustdesk.exe"),
+                Path.Combine(baseDir, "rustdesk"),
+                Path.Combine(localAppData, "WarrantyTechnicianApp", "rustdesk.exe"),
+                Path.Combine(localAppData, "WarrantyCustomerApp", "rustdesk.exe"),
+                Path.Combine(programFiles, "WarrantyTechnicianApp", "rustdesk.exe"),
+                Path.Combine(programFiles, "WarrantyCustomerApp", "rustdesk.exe"),
+                Path.Combine(programFiles, "RustDesk", "rustdesk.exe"),
+                Path.Combine(programFilesX86, "RustDesk", "rustdesk.exe"),
+                @"C:\Program Files\RustDesk\rustdesk.exe",
+                "/usr/bin/rustdesk",
+                "/usr/local/bin/rustdesk"
+            };
+
+            foreach (var candidate in directCandidates)
+            {
+                if (!string.IsNullOrWhiteSpace(candidate) && File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+
             string[] possibleBinaries = { "rustdesk", "rustdesk.exe" };
             foreach (var bin in possibleBinaries)
             {

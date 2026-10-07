@@ -75,6 +75,7 @@
                             <TextBox Text="{Binding Password, Mode=TwoWay}"
                                      PasswordChar="•"
                                      Watermark="••••••••"
+                                     Classes="revealPasswordButton"
                                      FontSize="13"/>
                         </StackPanel>
 

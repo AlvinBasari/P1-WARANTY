@@ -20,10 +20,27 @@ export const ConnectRemoteButton: React.FC<ConnectRemoteButtonProps> = ({
     });
   };
 
-  const handleCopy = (e: React.MouseEvent) => {
+  const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(sessionId);
-    toast.success(`Session ID ${sessionId} disalin ke clipboard`);
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(sessionId);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = sessionId;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
+      toast.success(`Session ID ${sessionId} disalin ke clipboard`);
+    } catch {
+      toast.error('Gagal menyalin Session ID');
+    }
   };
 
   return (

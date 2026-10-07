@@ -65,6 +65,18 @@ class RemoteSessionController extends Controller
 
         if ($validated['connection_status'] === 'completed') {
             $session->repairRequest()->update(['status' => 'completed']);
+        } elseif ($validated['connection_status'] === 'failed') {
+            $repairReq = $session->repairRequest;
+            if ($repairReq) {
+                if (!empty($validated['notes'])) {
+                    $notePrefix = "\n[Catatan Sesi Remote Gagal]: ";
+                    if (!str_contains($repairReq->description, '[Catatan Sesi Remote Gagal]')) {
+                        $repairReq->description .= $notePrefix . $validated['notes'];
+                    }
+                }
+                $repairReq->needs_office_repair = true;
+                $repairReq->save();
+            }
         }
 
         return response()->json([

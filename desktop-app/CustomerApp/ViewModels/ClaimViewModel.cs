@@ -36,9 +36,18 @@ namespace CustomerApp.ViewModels
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(DescriptionLengthText))]
+        [NotifyPropertyChangedFor(nameof(IsDescriptionShort))]
+        [NotifyPropertyChangedFor(nameof(DescriptionValidationHint))]
         private string _description = string.Empty;
 
         public string DescriptionLengthText => $"{Description?.Length ?? 0} / 500 Karakter";
+        public bool IsDescriptionShort => !string.IsNullOrEmpty(Description) && Description.Trim().Length < 10;
+        public string DescriptionValidationHint => IsDescriptionShort
+            ? "Tulis minimal 10 karakter agar teknisi mudah memahami gejala kendala."
+            : string.Empty;
+
+        [ObservableProperty]
+        private string? _copyToastMessage;
 
         [ObservableProperty]
         private string? _rustdeskSessionId;
@@ -56,10 +65,32 @@ namespace CustomerApp.ViewModels
         private bool _isRequestSubmitted;
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasScheduleApproved))]
+        [NotifyPropertyChangedFor(nameof(IsRemoteLocked))]
         private bool _isRemoteWaitingAcceptance;
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasScheduleApproved))]
+        [NotifyPropertyChangedFor(nameof(IsRemoteLocked))]
         private bool _isRemoteScheduled;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasScheduleApproved))]
+        [NotifyPropertyChangedFor(nameof(IsRemoteLocked))]
+        private bool _isRemoteCompleted;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasScheduleApproved))]
+        [NotifyPropertyChangedFor(nameof(IsRemoteLocked))]
+        private bool _isEscalatedToWorkshop;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasScheduleApproved))]
+        [NotifyPropertyChangedFor(nameof(IsRemoteLocked))]
+        private bool _isRejected;
+
+        public bool HasScheduleApproved => IsRemoteScheduled || IsRemoteCompleted || IsEscalatedToWorkshop;
+        public bool IsRemoteLocked => !IsRemoteScheduled && !IsRemoteCompleted;
 
         [ObservableProperty]
         private bool _canConnectRustDesk;
@@ -98,17 +129,24 @@ namespace CustomerApp.ViewModels
         private string _networkQuality = "Good";
 
         private readonly SystemMetricsService _metricsService = new();
+        private readonly Action<ConfirmDialogViewModel>? _showConfirm;
+
+        public bool IsDeviceWarrantyActive => _getDevice()?.Warranty?.Status?.Equals("active", StringComparison.OrdinalIgnoreCase) ?? false;
+        public bool IsDeviceWarrantyExpired => _getDevice() != null && !IsDeviceWarrantyActive;
+        public string DeviceWarrantyExpiryText => _getDevice()?.Warranty?.WarrantyEnd ?? "Masa Garansi Berakhir";
 
         public ClaimViewModel(
             ApiClient apiClient,
             RustDeskService rustdeskService,
             Func<DeviceDto?> getDevice,
-            Action<RepairRequestDto> onClaimSubmitted)
+            Action<RepairRequestDto> onClaimSubmitted,
+            Action<ConfirmDialogViewModel>? showConfirm = null)
         {
             _apiClient = apiClient;
             _rustdeskService = rustdeskService;
             _getDevice = getDevice;
             _onClaimSubmitted = onClaimSubmitted;
+            _showConfirm = showConfirm;
 
             _ = LoadNetworkQualityAsync();
         }
@@ -147,8 +185,10 @@ namespace CustomerApp.ViewModels
         }
 
         [RelayCommand]
-        private async Task SubmitClaimAsync()
+        public async Task SubmitClaimAsync()
         {
+            if (IsLoading) return;
+
             var device = _getDevice();
             if (device == null)
             {
@@ -156,12 +196,56 @@ namespace CustomerApp.ViewModels
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(Description) || Description.Length < 5)
+            if (string.IsNullOrWhiteSpace(Description) || Description.Trim().Length < 10)
             {
-                ErrorMessage = "Harap jelaskan kendala atau gejala yang Anda alami secara singkat (minimal 5 karakter).";
+                ErrorMessage = "Harap jelaskan kendala atau gejala yang dialami minimal 10 karakter agar teknisi dapat menganalisis kendala dengan tepat.";
                 return;
             }
 
+            if (_showConfirm != null)
+            {
+                bool isWarrantyActive = device.Warranty?.Status?.Equals("active", StringComparison.OrdinalIgnoreCase) ?? false;
+
+                string serviceMode = IsPhysicalDamage
+                    ? "Servis On-Site (Kunjungan Teknisi Lapangan)"
+                    : "Bantuan Remote (Software via RustDesk)";
+
+                string scheduleInfo = IsPhysicalDamage
+                    ? "Akan Dikonfirmasi Teknisi Lapangan"
+                    : SelectedScheduleSlot;
+
+                string warrantyInfo = isWarrantyActive
+                    ? $"AKTIF (s/d {device.Warranty?.WarrantyEnd ?? "Resmi PT JTS"})"
+                    : "BERAKHIR (Non-Garansi)";
+
+                string descPreview = Description.Length > 90 ? Description.Substring(0, 87) + "..." : Description;
+
+                string detailNote = $"• Perangkat: {device.Model ?? "PC/Laptop"} (SN: {device.SerialNumber ?? "-"})\n• Layanan: {serviceMode}\n• Waktu: {scheduleInfo}\n• Garansi: {warrantyInfo}\n• Keluhan: \"{descPreview}\"";
+
+                string message = isWarrantyActive
+                    ? "Pastikan rincian keluhan dan jadwal yang Anda pilih telah sesuai. Permintaan akan segera diteruskan ke antrean teknisi resmi PT JTS."
+                    : "⚠️ PERINGATAN GARANSI BERAKHIR: Perangkat ini terdeteksi telah melewati masa garansi aktif. Pengajuan tiket tetap dapat diproses, namun perbaikan hardware atau suku cadang non-garansi akan dikenakan biaya sesuai konfirmasi teknisi.";
+
+                _showConfirm(new ConfirmDialogViewModel(
+                    title: "Konfirmasi Pengajuan Servis",
+                    message: message,
+                    onConfirm: () => _ = ExecuteSubmitClaimAsync(device),
+                    onCancel: () => { },
+                    detailNote: detailNote,
+                    confirmText: "Kirim Pengajuan Sekarang",
+                    cancelText: "Periksa Kembali",
+                    dialogType: isWarrantyActive ? (IsPhysicalDamage ? "warning" : "info") : "warning",
+                    badgeText: IsPhysicalDamage ? "SERVIS ON-SITE" : "BANTUAN REMOTE"
+                ));
+                return;
+            }
+
+            await ExecuteSubmitClaimAsync(device);
+        }
+
+        public async Task ExecuteSubmitClaimAsync(DeviceDto device)
+        {
+            if (IsLoading) return;
             IsLoading = true;
             ErrorMessage = null;
             SuccessMessage = null;
@@ -196,6 +280,9 @@ namespace CustomerApp.ViewModels
                 {
                     IsRemoteWaitingAcceptance = true;
                     IsRemoteScheduled = false;
+                    IsRemoteCompleted = false;
+                    IsEscalatedToWorkshop = false;
+                    IsRejected = false;
                     CanConnectRustDesk = false;
                     RequestStatusBadge = "MENUNGGU PENJADWALAN TEKNISI";
                     ScheduledAtText = "Menunggu Konfirmasi Teknisi";
@@ -208,6 +295,9 @@ namespace CustomerApp.ViewModels
                 {
                     IsRemoteWaitingAcceptance = false;
                     IsRemoteScheduled = false;
+                    IsRemoteCompleted = false;
+                    IsEscalatedToWorkshop = false;
+                    IsRejected = false;
                     CanConnectRustDesk = false;
                     RequestStatusBadge = "MENUNGGU KUNJUNGAN TEKNISI";
                     ScheduledAtText = "Akan Dikonfirmasi Teknisi Lapangan";
@@ -229,33 +319,169 @@ namespace CustomerApp.ViewModels
             }
         }
 
+        public void ApplyRefreshedRequestStatus(RepairRequestDto refreshed, bool isManualCheck = false)
+        {
+            SubmittedRequest = refreshed;
+
+            if (IsPhysicalDamage)
+            {
+                string status = refreshed.Status?.ToLowerInvariant() ?? "pending";
+                if (status == "completed")
+                {
+                    RequestStatusBadge = "SERVIS SELESAI";
+                    StatusDescription = "Perbaikan unit telah selesai dilakukan oleh teknisi lapangan.";
+                    if (isManualCheck) SimulationFeedbackMessage = "Status terbaru: Servis on-site telah selesai.";
+                }
+                else if (status == "rejected")
+                {
+                    IsRejected = true;
+                    RequestStatusBadge = "KLAIM DITOLAK";
+                    StatusDescription = "Permintaan servis on-site tidak disetujui setelah peninjauan teknisi.";
+                    if (isManualCheck) SimulationFeedbackMessage = "Status terbaru: Permintaan klaim ditolak.";
+                }
+                else if (status == "in_progress")
+                {
+                    RequestStatusBadge = "SEDANG DITANGANI TEKNISI";
+                    StatusDescription = "Teknisi lapangan resmi sedang menangani perbaikan unit di lokasi Anda.";
+                    if (isManualCheck) SimulationFeedbackMessage = "Status terbaru: Teknisi sedang menangani unit.";
+                }
+                else
+                {
+                    RequestStatusBadge = "MENUNGGU KUNJUNGAN TEKNISI";
+                    StatusDescription = "Permintaan servis on-site telah diterima dan dalam antrean jadwal rute teknisi.";
+                    if (isManualCheck) SimulationFeedbackMessage = "Status saat ini: Menunggu konfirmasi jadwal kunjungan teknisi.";
+                }
+                UpdateTimelineSteps();
+                return;
+            }
+
+            string reqStatus = refreshed.Status?.ToLowerInvariant() ?? "pending";
+            string? remoteStatus = refreshed.RemoteSession?.ConnectionStatus?.ToLowerInvariant();
+
+            if (reqStatus == "completed" || remoteStatus == "completed")
+            {
+                IsRemoteCompleted = true;
+                IsRemoteScheduled = false;
+                IsRemoteWaitingAcceptance = false;
+                IsEscalatedToWorkshop = false;
+                IsRejected = false;
+                CanConnectRustDesk = false;
+                RequestStatusBadge = "PERBAIKAN SELESAI";
+                ScheduledAtText = refreshed.ScheduledAt ?? refreshed.RemoteSession?.ScheduledAt ?? "Selesai";
+                AssignedTechnicianName = refreshed.RemoteSession?.Technician?.Name ?? "Budi Santoso (Teknisi Garansi)";
+                StatusDescription = "Sesi perbaikan remote telah diselesaikan oleh teknisi. Sistem dan perangkat Anda telah kembali berfungsi normal.";
+                if (isManualCheck)
+                    SimulationFeedbackMessage = "Status terbaru: Sesi perbaikan telah selesai dilaksanakan oleh teknisi.";
+            }
+            else if (reqStatus == "rejected")
+            {
+                IsRemoteCompleted = false;
+                IsRemoteScheduled = false;
+                IsRemoteWaitingAcceptance = false;
+                IsEscalatedToWorkshop = false;
+                IsRejected = true;
+                CanConnectRustDesk = false;
+                RequestStatusBadge = "KLAIM DITOLAK";
+                ScheduledAtText = "Tidak Disetujui";
+                AssignedTechnicianName = "-";
+                StatusDescription = "Permintaan klaim perbaikan tidak disetujui setelah peninjauan. Silakan hubungi CS untuk informasi lebih lanjut.";
+                if (isManualCheck)
+                    SimulationFeedbackMessage = "Status terbaru: Permintaan klaim tidak disetujui.";
+            }
+            else if (reqStatus == "cancelled")
+            {
+                IsRemoteCompleted = false;
+                IsRemoteScheduled = false;
+                IsRemoteWaitingAcceptance = false;
+                IsEscalatedToWorkshop = false;
+                IsRejected = true;
+                CanConnectRustDesk = false;
+                RequestStatusBadge = "DIBATALKAN";
+                ScheduledAtText = "Dibatalkan";
+                AssignedTechnicianName = "-";
+                StatusDescription = "Permintaan tiket klaim perbaikan telah dibatalkan.";
+                if (isManualCheck)
+                    SimulationFeedbackMessage = "Status terbaru: Tiket telah dibatalkan.";
+            }
+            else if (remoteStatus == "failed" || (refreshed.NeedsOfficeRepair && refreshed.Type == "remote"))
+            {
+                IsRemoteCompleted = false;
+                IsRemoteScheduled = false;
+                IsRemoteWaitingAcceptance = false;
+                IsEscalatedToWorkshop = true;
+                IsRejected = false;
+                CanConnectRustDesk = false;
+                RequestStatusBadge = "DIALIHKAN KE WORKSHOP";
+                ScheduledAtText = "Dialihkan ke Workshop";
+                AssignedTechnicianName = refreshed.RemoteSession?.Technician?.Name ?? "Budi Santoso (Teknisi Garansi)";
+                StatusDescription = "Berdasarkan diagnosa remote, kendala membutuhkan penanganan hardware fisik di Workshop resmi PT JTS (cek tab Pelacakan Servis).";
+                if (isManualCheck)
+                    SimulationFeedbackMessage = "Status terbaru: Sesi remote dialihkan ke penanganan Workshop / Service Center.";
+            }
+            else if (reqStatus == "in_progress" || remoteStatus == "connected")
+            {
+                IsRemoteCompleted = false;
+                IsRemoteScheduled = true;
+                IsRemoteWaitingAcceptance = false;
+                IsEscalatedToWorkshop = false;
+                IsRejected = false;
+                CanConnectRustDesk = true;
+                RequestStatusBadge = "SESI REMOTE BERLANGSUNG";
+                ScheduledAtText = refreshed.ScheduledAt ?? refreshed.RemoteSession?.ScheduledAt ?? SelectedScheduleSlot;
+                AssignedTechnicianName = refreshed.RemoteSession?.Technician?.Name ?? "Budi Santoso (Teknisi Garansi)";
+                StatusDescription = $"Teknisi ({AssignedTechnicianName}) sedang terhubung ke perangkat Anda via RustDesk.";
+                if (isManualCheck)
+                    SimulationFeedbackMessage = "Status terbaru: Sesi remote sedang aktif/berlangsung.";
+            }
+            else if (reqStatus == "scheduled" || remoteStatus == "scheduled" || !string.IsNullOrEmpty(refreshed.ScheduledAt))
+            {
+                IsRemoteCompleted = false;
+                IsRemoteScheduled = true;
+                IsRemoteWaitingAcceptance = false;
+                IsEscalatedToWorkshop = false;
+                IsRejected = false;
+                CanConnectRustDesk = true;
+                RequestStatusBadge = "JADWAL DISETUJUI TEKNISI";
+                ScheduledAtText = refreshed.ScheduledAt ?? refreshed.RemoteSession?.ScheduledAt ?? SelectedScheduleSlot;
+                AssignedTechnicianName = refreshed.RemoteSession?.Technician?.Name ?? "Budi Santoso (Teknisi Garansi)";
+                StatusDescription = $"Teknisi telah menyetujui jadwal sesi remote pada {ScheduledAtText}. Silakan buka RustDesk untuk memulai koneksi diagnostik.";
+                if (isManualCheck)
+                    SimulationFeedbackMessage = "Status terbaru: Jadwal telah dikonfirmasi dan disetujui oleh teknisi!";
+            }
+            else
+            {
+                IsRemoteCompleted = false;
+                IsRemoteScheduled = false;
+                IsRemoteWaitingAcceptance = true;
+                IsEscalatedToWorkshop = false;
+                IsRejected = false;
+                CanConnectRustDesk = false;
+                RequestStatusBadge = "MENUNGGU PENJADWALAN TEKNISI";
+                ScheduledAtText = "Menunggu Konfirmasi Teknisi";
+                AssignedTechnicianName = "Dalam Antrean Alokasi";
+                StatusDescription = "Permintaan masih dalam antrean peninjauan teknisi. Harap menunggu konfirmasi.";
+                if (isManualCheck)
+                    SimulationFeedbackMessage = "Status saat ini: Masih dalam antrean peninjauan teknisi.";
+            }
+
+            UpdateTimelineSteps();
+        }
+
         private async void StartWaitingAcceptancePolling()
         {
-            while (IsRequestSubmitted && IsRemoteWaitingAcceptance && SubmittedRequest != null)
+            while (IsRequestSubmitted && (IsRemoteWaitingAcceptance || IsRemoteScheduled) && SubmittedRequest != null)
             {
                 await Task.Delay(8000);
-                if (!IsRequestSubmitted || !IsRemoteWaitingAcceptance || SubmittedRequest == null) break;
+                if (!IsRequestSubmitted || SubmittedRequest == null) break;
 
                 try
                 {
                     var refreshed = await _apiClient.GetRepairRequestAsync(SubmittedRequest.Id);
                     if (refreshed != null)
                     {
-                        bool isScheduled = refreshed.Status == "scheduled"
-                            || refreshed.RemoteSession?.ConnectionStatus == "scheduled"
-                            || !string.IsNullOrEmpty(refreshed.ScheduledAt);
-
-                        if (isScheduled)
+                        ApplyRefreshedRequestStatus(refreshed, isManualCheck: false);
+                        if (IsRemoteCompleted || IsRejected || IsEscalatedToWorkshop)
                         {
-                            SubmittedRequest = refreshed;
-                            IsRemoteScheduled = true;
-                            IsRemoteWaitingAcceptance = false;
-                            CanConnectRustDesk = true;
-                            RequestStatusBadge = "JADWAL DISETUJUI TEKNISI";
-                            ScheduledAtText = refreshed.ScheduledAt ?? refreshed.RemoteSession?.ScheduledAt ?? SelectedScheduleSlot;
-                            AssignedTechnicianName = refreshed.RemoteSession?.Technician?.Name ?? "Budi Santoso (Teknisi Garansi)";
-                            StatusDescription = $"Teknisi telah menyetujui jadwal sesi remote pada {ScheduledAtText}. Silakan buka RustDesk untuk memulai koneksi diagnostik.";
-                            UpdateTimelineSteps();
                             break;
                         }
                     }
@@ -267,7 +493,7 @@ namespace CustomerApp.ViewModels
         [RelayCommand]
         public async Task CheckScheduleStatusAsync()
         {
-            if (SubmittedRequest == null) return;
+            if (SubmittedRequest == null || IsCheckingStatus) return;
 
             IsCheckingStatus = true;
             SimulationFeedbackMessage = null;
@@ -275,36 +501,10 @@ namespace CustomerApp.ViewModels
             try
             {
                 var refreshed = await _apiClient.GetRepairRequestAsync(SubmittedRequest.Id);
-                SubmittedRequest = refreshed;
-
-                bool isScheduled = refreshed.Status == "scheduled"
-                    || refreshed.RemoteSession?.ConnectionStatus == "scheduled"
-                    || !string.IsNullOrEmpty(refreshed.ScheduledAt);
-
-                if (isScheduled)
+                if (refreshed != null)
                 {
-                    IsRemoteScheduled = true;
-                    IsRemoteWaitingAcceptance = false;
-                    CanConnectRustDesk = true;
-                    RequestStatusBadge = "JADWAL DISETUJUI TEKNISI";
-                    ScheduledAtText = refreshed.ScheduledAt ?? refreshed.RemoteSession?.ScheduledAt ?? SelectedScheduleSlot;
-                    AssignedTechnicianName = refreshed.RemoteSession?.Technician?.Name ?? "Budi Santoso (Teknisi Garansi)";
-                    StatusDescription = $"Teknisi telah menyetujui jadwal sesi remote pada {ScheduledAtText}. Silakan buka RustDesk untuk memulai koneksi diagnostik.";
-                    SimulationFeedbackMessage = "Status terbaru: Jadwal telah dikonfirmasi dan disetujui oleh teknisi!";
+                    ApplyRefreshedRequestStatus(refreshed, isManualCheck: true);
                 }
-                else
-                {
-                    IsRemoteScheduled = false;
-                    IsRemoteWaitingAcceptance = true;
-                    CanConnectRustDesk = false;
-                    RequestStatusBadge = "MENUNGGU PENJADWALAN TEKNISI";
-                    ScheduledAtText = "Menunggu Konfirmasi Teknisi";
-                    AssignedTechnicianName = "Dalam Antrean Alokasi";
-                    StatusDescription = "Permintaan masih dalam antrean peninjauan teknisi. Harap menunggu konfirmasi.";
-                    SimulationFeedbackMessage = "Status saat ini: Masih dalam antrean peninjauan teknisi.";
-                }
-
-                UpdateTimelineSteps();
             }
             catch (Exception ex)
             {
@@ -336,17 +536,8 @@ namespace CustomerApp.ViewModels
                     "Disetujui dan dijadwalkan oleh Budi Santoso (Teknisi)."
                 );
 
-                SubmittedRequest = scheduled;
-                IsRemoteScheduled = true;
-                IsRemoteWaitingAcceptance = false;
-                CanConnectRustDesk = true;
-                RequestStatusBadge = "JADWAL DISETUJUI TEKNISI";
-                ScheduledAtText = scheduled.ScheduledAt ?? scheduleTime;
-                AssignedTechnicianName = scheduled.RemoteSession?.Technician?.Name ?? "Budi Santoso (Teknisi Garansi)";
-                StatusDescription = $"Teknisi telah menyetujui jadwal sesi remote pada {ScheduledAtText}. Silakan buka RustDesk untuk memulai koneksi diagnostik.";
+                ApplyRefreshedRequestStatus(scheduled, isManualCheck: false);
                 SimulationFeedbackMessage = "⚡ [Demo Live] Permintaan resmi disetujui! Sesi remote telah dijadwalkan bersama teknisi.";
-
-                UpdateTimelineSteps();
             }
             catch (Exception ex)
             {
@@ -355,6 +546,28 @@ namespace CustomerApp.ViewModels
             finally
             {
                 IsSimulating = false;
+            }
+        }
+
+        [RelayCommand]
+        public async Task CopyRustDeskIdAsync()
+        {
+            if (string.IsNullOrWhiteSpace(RustdeskSessionId)) return;
+            try
+            {
+                if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow?.Clipboard != null)
+                {
+                    await desktop.MainWindow.Clipboard.SetTextAsync(RustdeskSessionId);
+                }
+                CopyToastMessage = "✓ Tersalin!";
+                await Task.Delay(2500);
+                CopyToastMessage = null;
+            }
+            catch
+            {
+                CopyToastMessage = "✓ Disalin!";
+                await Task.Delay(2000);
+                CopyToastMessage = null;
             }
         }
 
@@ -417,6 +630,9 @@ namespace CustomerApp.ViewModels
             RustdeskSessionId = null;
             IsRemoteScheduled = false;
             IsRemoteWaitingAcceptance = false;
+            IsRemoteCompleted = false;
+            IsEscalatedToWorkshop = false;
+            IsRejected = false;
             CanConnectRustDesk = false;
             TimelineSteps.Clear();
         }
@@ -445,21 +661,106 @@ namespace CustomerApp.ViewModels
                     BadgeText = "SELESAI"
                 });
 
-                // 2. Step: Peninjauan Kendala & Alokasi (Waiting Acceptance)
-                if (IsRemoteWaitingAcceptance)
+                if (IsRejected)
+                {
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 2,
+                        StepNumber = "2",
+                        Title = "2. Peninjauan Kendala & Validasi",
+                        Subtitle = "Permintaan klaim perbaikan tidak dapat disetujui setelah peninjauan teknisi.",
+                        Timestamp = "Selesai Ditinjau",
+                        StatusState = "active",
+                        BadgeText = "DITOLAK"
+                    });
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 3,
+                        StepNumber = "3",
+                        Title = "3. Konfirmasi Jadwal Sesi Remote",
+                        Subtitle = "Tiket ditolak sebelum penetapan jadwal remote.",
+                        Timestamp = "Dibatalkan",
+                        StatusState = "pending",
+                        BadgeText = "DIBATALKAN"
+                    });
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 4,
+                        StepNumber = "4",
+                        Title = "4. Pelaksanaan Remote Diagnostik",
+                        Subtitle = "Sesi remote ditutup.",
+                        Timestamp = "Tidak Aktif",
+                        StatusState = "pending",
+                        BadgeText = "DITUTUP"
+                    });
+                }
+                else if (IsEscalatedToWorkshop)
+                {
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 2,
+                        StepNumber = "2",
+                        Title = "2. Peninjauan Gejala & Alokasi",
+                        Subtitle = $"Kendala ditinjau oleh {AssignedTechnicianName}.",
+                        Timestamp = "Selesai Ditinjau",
+                        StatusState = "completed",
+                        BadgeText = "TERALOKASI"
+                    });
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 3,
+                        StepNumber = "3",
+                        Title = "3. Sesi Diagnostik Awal",
+                        Subtitle = "Diagnosa remote mendeteksi kendala fisik yang membutuhkan perbaikan workshop.",
+                        Timestamp = ScheduledAtText,
+                        StatusState = "completed",
+                        BadgeText = "TERVERIFIKASI"
+                    });
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 4,
+                        StepNumber = "4",
+                        Title = "4. Dialihkan ke Service Center (Workshop)",
+                        Subtitle = "Unit dialihkan ke penanganan workshop 5 tahap. Silakan pantau tab Pelacakan Servis.",
+                        Timestamp = "Aktif di Workshop",
+                        StatusState = "active",
+                        BadgeText = "WORKSHOP"
+                    });
+                }
+                else if (IsRemoteCompleted)
                 {
                     steps.Add(new ClaimTimelineItem
                     {
                         StepIndex = 2,
                         StepNumber = "2",
                         Title = "2. Peninjauan Gejala & Alokasi Teknisi",
-                        Subtitle = "Koordinator teknisi sedang menganalisis gejala kendala dan mencocokkan teknisi resmi bersertifikasi yang siap menangani.",
-                        Timestamp = "Sedang Berlangsung",
-                        StatusState = "active",
-                        BadgeText = "SEDANG DITINJAU"
+                        Subtitle = $"Kendala telah ditinjau dan ditangani oleh {AssignedTechnicianName}.",
+                        Timestamp = "Selesai Diverifikasi",
+                        StatusState = "completed",
+                        BadgeText = "TERALOKASI"
+                    });
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 3,
+                        StepNumber = "3",
+                        Title = "3. Konfirmasi Jadwal Sesi Remote",
+                        Subtitle = $"Jadwal resmi: {ScheduledAtText}.",
+                        Timestamp = ScheduledAtText,
+                        StatusState = "completed",
+                        BadgeText = "DIJADWALKAN"
+                    });
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 4,
+                        StepNumber = "4",
+                        Title = "4. Pelaksanaan Remote Diagnostik (RustDesk)",
+                        Subtitle = "Sesi remote perbaikan telah selesai dilaksanakan dan berhasil diperbaiki.",
+                        Timestamp = "Selesai",
+                        StatusState = "completed",
+                        BadgeText = "SELESAI"
                     });
                 }
-                else
+                else if (IsRemoteScheduled)
                 {
                     steps.Add(new ClaimTimelineItem
                     {
@@ -471,11 +772,6 @@ namespace CustomerApp.ViewModels
                         StatusState = "completed",
                         BadgeText = "TERALOKASI"
                     });
-                }
-
-                // 3. Step: Konfirmasi Jadwal Resmi
-                if (IsRemoteScheduled)
-                {
                     steps.Add(new ClaimTimelineItem
                     {
                         StepIndex = 3,
@@ -486,24 +782,6 @@ namespace CustomerApp.ViewModels
                         StatusState = "completed",
                         BadgeText = "DIJADWALKAN"
                     });
-                }
-                else
-                {
-                    steps.Add(new ClaimTimelineItem
-                    {
-                        StepIndex = 3,
-                        StepNumber = "3",
-                        Title = "3. Konfirmasi Jadwal Sesi Remote",
-                        Subtitle = "Menunggu teknisi menyetujui dan menetapkan tanggal serta jam sesi remote diagnostik resmi.",
-                        Timestamp = "Dalam Antrean",
-                        StatusState = "pending",
-                        BadgeText = "MENUNGGU"
-                    });
-                }
-
-                // 4. Step: Sesi Diagnostik Remote (RustDesk)
-                if (IsRemoteScheduled)
-                {
                     steps.Add(new ClaimTimelineItem
                     {
                         StepIndex = 4,
@@ -517,6 +795,31 @@ namespace CustomerApp.ViewModels
                 }
                 else
                 {
+                    // 2. Step: Peninjauan Kendala & Alokasi (Waiting Acceptance)
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 2,
+                        StepNumber = "2",
+                        Title = "2. Peninjauan Gejala & Alokasi Teknisi",
+                        Subtitle = "Koordinator teknisi sedang menganalisis gejala kendala dan mencocokkan teknisi resmi bersertifikasi yang siap menangani.",
+                        Timestamp = "Sedang Berlangsung",
+                        StatusState = "active",
+                        BadgeText = "SEDANG DITINJAU"
+                    });
+
+                    // 3. Step: Konfirmasi Jadwal Resmi
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 3,
+                        StepNumber = "3",
+                        Title = "3. Konfirmasi Jadwal Sesi Remote",
+                        Subtitle = "Menunggu teknisi menyetujui dan menetapkan tanggal serta jam sesi remote diagnostik resmi.",
+                        Timestamp = "Dalam Antrean",
+                        StatusState = "pending",
+                        BadgeText = "MENUNGGU"
+                    });
+
+                    // 4. Step: Sesi Diagnostik Remote (RustDesk)
                     steps.Add(new ClaimTimelineItem
                     {
                         StepIndex = 4,
@@ -554,27 +857,79 @@ namespace CustomerApp.ViewModels
                     BadgeText = "TERLAMPIR"
                 });
 
-                steps.Add(new ClaimTimelineItem
+                string onSiteStatus = SubmittedRequest?.Status?.ToLowerInvariant() ?? "pending";
+                if (onSiteStatus == "completed")
                 {
-                    StepIndex = 3,
-                    StepNumber = "3",
-                    Title = "3. Penugasan & Rute Teknisi Lapangan",
-                    Subtitle = "Pusat servis sedang menjadwalkan rute kunjungan teknisi lapangan terdekat ke lokasi Anda.",
-                    Timestamp = "Sedang Berlangsung",
-                    StatusState = "active",
-                    BadgeText = "PROSES AKTIF"
-                });
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 3,
+                        StepNumber = "3",
+                        Title = "3. Penugasan & Rute Teknisi Lapangan",
+                        Subtitle = "Teknisi lapangan telah menyelesaikan rute kunjungan ke lokasi Anda.",
+                        Timestamp = "Selesai",
+                        StatusState = "completed",
+                        BadgeText = "SELESAI"
+                    });
 
-                steps.Add(new ClaimTimelineItem
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 4,
+                        StepNumber = "4",
+                        Title = "4. Servis Selesai di Lokasi",
+                        Subtitle = "Perbaikan unit hardware telah berhasil dituntaskan langsung di lokasi.",
+                        Timestamp = "Selesai",
+                        StatusState = "completed",
+                        BadgeText = "SELESAI"
+                    });
+                }
+                else if (onSiteStatus == "in_progress")
                 {
-                    StepIndex = 4,
-                    StepNumber = "4",
-                    Title = "4. Kunjungan Teknisi ke Lokasi Anda",
-                    Subtitle = "Teknisi lapangan akan menghubungi sebelum berangkat menuju alamat rumah Anda.",
-                    Timestamp = "Menunggu Jadwal Rute",
-                    StatusState = "pending",
-                    BadgeText = "MENUNGGU"
-                });
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 3,
+                        StepNumber = "3",
+                        Title = "3. Penugasan & Rute Teknisi Lapangan",
+                        Subtitle = "Teknisi telah tiba dan sedang menangani perangkat di lokasi.",
+                        Timestamp = "Di Lokasi",
+                        StatusState = "completed",
+                        BadgeText = "TIBA"
+                    });
+
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 4,
+                        StepNumber = "4",
+                        Title = "4. Teknisi Sedang Menangani Unit",
+                        Subtitle = "Proses perbaikan dan pengetesan hardware sedang berlangsung di lokasi Anda.",
+                        Timestamp = "Sedang Berlangsung",
+                        StatusState = "active",
+                        BadgeText = "PROSES AKTIF"
+                    });
+                }
+                else
+                {
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 3,
+                        StepNumber = "3",
+                        Title = "3. Penugasan & Rute Teknisi Lapangan",
+                        Subtitle = "Pusat servis sedang menjadwalkan rute kunjungan teknisi lapangan terdekat ke lokasi Anda.",
+                        Timestamp = "Sedang Berlangsung",
+                        StatusState = "active",
+                        BadgeText = "PROSES AKTIF"
+                    });
+
+                    steps.Add(new ClaimTimelineItem
+                    {
+                        StepIndex = 4,
+                        StepNumber = "4",
+                        Title = "4. Kunjungan Teknisi ke Lokasi Anda",
+                        Subtitle = "Teknisi lapangan akan menghubungi sebelum berangkat menuju alamat rumah Anda.",
+                        Timestamp = "Menunggu Jadwal Rute",
+                        StatusState = "pending",
+                        BadgeText = "MENUNGGU"
+                    });
+                }
             }
 
             TimelineSteps = new ObservableCollection<ClaimTimelineItem>(steps);

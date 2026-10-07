@@ -379,6 +379,19 @@ namespace SharedCore.Services
                         string v = File.ReadAllText("/sys/class/dmi/id/bios_vendor").Trim();
                         if (!string.IsNullOrEmpty(v)) vendor = v;
                     }
+                    else if (OperatingSystem.IsWindows())
+                    {
+                        try
+                        {
+                            using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
+                            if (key != null)
+                            {
+                                string? v = key.GetValue("BIOSVendor") as string ?? key.GetValue("SystemManufacturer") as string;
+                                if (!string.IsNullOrWhiteSpace(v)) vendor = v.Trim();
+                            }
+                        }
+                        catch { }
+                    }
                 }
                 catch { }
 

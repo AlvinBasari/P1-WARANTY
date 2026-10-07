@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../services/api';
+import { ConfirmModal } from './ConfirmModal';
 
 interface InvoiceItemForm {
   id?: number;
@@ -69,8 +70,12 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     }
   ]);
 
-  const [notes, setNotes] = useState('Faktur jaminan garansi resmi PT Jaya Teknologi Solusindo.');
+  const [notes, setNotes] = useState('Faktur jaminan garansi resmi PT Jaya Teknologi Solusi.');
   const [terms, setTerms] = useState('1. Suku cadang resmi digaransi selama 1 tahun.\n2. Biaya yang dijamin garansi resmi telah dipotong 100%.\n3. Harap simpan faktur ini sebagai bukti klaim sah.');
+
+  // Confirmation Modals State
+  const [showPayableWarning, setShowPayableWarning] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ index: number; name: string } | null>(null);
 
   const fetchInvoice = async () => {
     if (!repairRequest) return;
@@ -130,7 +135,19 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
       toast.error('Invoice harus memiliki minimal 1 item.');
       return;
     }
-    setItems(items.filter((_, idx) => idx !== index));
+    const item = items[index];
+    if (item.item_name && item.item_name.trim().length > 0) {
+      setItemToDelete({ index, name: item.item_name });
+    } else {
+      setItems(items.filter((_, idx) => idx !== index));
+    }
+  };
+
+  const confirmDeleteItem = () => {
+    if (!itemToDelete) return;
+    setItems(items.filter((_, idx) => idx !== itemToDelete.index));
+    toast.info(`Item "${itemToDelete.name}" telah dihapus.`);
+    setItemToDelete(null);
   };
 
   const handleItemChange = (index: number, field: keyof InvoiceItemForm, value: any) => {
@@ -146,16 +163,10 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   }, 0);
   const netPayable = Math.max(0, grossSubtotal - warrantyDiscount);
 
-  const handleSaveInvoice = async () => {
+  const executeSaveInvoice = async () => {
     if (!repairRequest) return;
-    for (const item of items) {
-      if (!item.item_name.trim()) {
-        toast.error('Nama item tidak boleh kosong.');
-        return;
-      }
-    }
-
     setSaving(true);
+    setShowPayableWarning(false);
     try {
       const payload = {
         notes,
@@ -181,6 +192,23 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveInvoice = () => {
+    if (!repairRequest) return;
+    for (const item of items) {
+      if (!item.item_name.trim()) {
+        toast.error('Nama item tidak boleh kosong.');
+        return;
+      }
+    }
+
+    if (netPayable > 0) {
+      setShowPayableWarning(true);
+      return;
+    }
+
+    executeSaveInvoice();
   };
 
   const handlePrint = () => {
@@ -535,6 +563,38 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           </div>
         </div>
       </Dialog>
+
+      {/* Payable Invoice Warning Confirmation */}
+      <ConfirmModal
+        isOpen={showPayableWarning}
+        onClose={() => setShowPayableWarning(false)}
+        onConfirm={executeSaveInvoice}
+        loading={saving}
+        variant="warning"
+        title="Peringatan Tagihan Pelanggan (Di Luar Garansi)"
+        description="Faktur ini memuat komponen atau jasa yang TIDAK DIJAMIN garansi resmi. Pelanggan akan dibebankan biaya perbaikan sesuai rincian berikut:"
+        confirmLabel="Ya, Terbitkan Tagihan"
+        cancelLabel="Kembali Edit"
+        details={[
+          { label: 'Total Sebelum Subsidi', value: `Rp ${grossSubtotal.toLocaleString('id-ID')}` },
+          { label: 'Subsidi Garansi Resmi', value: `- Rp ${warrantyDiscount.toLocaleString('id-ID')}` },
+          { label: 'Wajib Dibayar Pelanggan', value: `Rp ${netPayable.toLocaleString('id-ID')}` },
+        ]}
+      />
+
+      {/* Delete Item Confirmation */}
+      {itemToDelete && (
+        <ConfirmModal
+          isOpen={true}
+          onClose={() => setItemToDelete(null)}
+          onConfirm={confirmDeleteItem}
+          variant="danger"
+          title="Hapus Item Faktur"
+          description={`Apakah Anda yakin ingin menghapus "${itemToDelete.name}" dari faktur perbaikan ini?`}
+          confirmLabel="Ya, Hapus"
+          cancelLabel="Batal"
+        />
+      )}
     </Transition>
   );
 };

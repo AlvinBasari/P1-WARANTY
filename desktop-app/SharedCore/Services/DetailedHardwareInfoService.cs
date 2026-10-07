@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Management;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Win32;
 
 namespace SharedCore.Services
 {
@@ -116,6 +118,24 @@ namespace SharedCore.Services
             return HardwareIntelligenceEngine.DetectDeviceCategory(manufacturer, model, hasBattery);
         }
 
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        private class MEMORYSTATUSEX
+        {
+            public uint dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX lpBuffer);
+
         private bool CheckIfBatteryPresent()
         {
             try
@@ -131,6 +151,28 @@ namespace SharedCore.Services
                             if (File.Exists(capFile)) return true;
                         }
                     }
+                }
+                else if (OperatingSystem.IsWindows())
+                {
+                    try
+                    {
+                        using var s = new System.Management.ManagementObjectSearcher("SELECT EstimatedChargeRemaining, BatteryStatus FROM Win32_Battery");
+                        var coll = s.Get();
+                        if (coll.Count > 0) return true;
+                    }
+                    catch { }
+
+                    try
+                    {
+                        using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
+                        if (key != null)
+                        {
+                            var encObj = key.GetValue("EnclosureType");
+                            if (encObj is int enc && (enc == 8 || enc == 9 || enc == 10 || enc == 11 || enc == 12 || enc == 14 || enc == 30 || enc == 31 || enc == 32))
+                                return true;
+                        }
+                    }
+                    catch { }
                 }
             }
             catch { }
@@ -240,7 +282,6 @@ namespace SharedCore.Services
                                 displayFlags.Add(label);
                         }
 
-                        // Fallback if none of the customized ones matched
                         if (displayFlags.Count == 0)
                         {
                             string[] fallbackFlags = { "SSE", "SSE2", "SSE3", "SSSE3", "SSE4_1", "SSE4_2", "AVX", "AVX2", "AES", "FMA" };
@@ -253,10 +294,80 @@ namespace SharedCore.Services
                         if (displayFlags.Count > 0) cpu.InstructionSets = displayFlags;
                     }
                 }
+                else if (OperatingSystem.IsWindows())
+                {
+                    // 1. Registry for instant CPU model name, vendor, and clock
+                    try
+                    {
+                        using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\CentralProcessor\0");
+                        if (key != null)
+                        {
+                            string? name = key.GetValue("ProcessorNameString") as string;
+                            if (!string.IsNullOrWhiteSpace(name))
+                            {
+                                cpu.ModelName = name.Trim();
+                                if (cpu.ModelName.Contains("@"))
+                                {
+                                    var clockPart = cpu.ModelName.Split('@');
+                                    if (clockPart.Length > 1) cpu.BaseClock = clockPart[1].Trim();
+                                }
+                            }
+
+                            string? vendor = key.GetValue("VendorIdentifier") as string;
+                            if (!string.IsNullOrWhiteSpace(vendor)) cpu.Vendor = vendor.Trim();
+
+                            var mhzVal = key.GetValue("~MHz");
+                            if (mhzVal is int mhzInt && mhzInt > 0)
+                            {
+                                cpu.CurrentClock = $"{mhzInt / 1000.0:F2} GHz ({mhzInt} MHz)";
+                                if (string.IsNullOrEmpty(cpu.BaseClock) || cpu.BaseClock == "N/A")
+                                    cpu.BaseClock = $"{mhzInt / 1000.0:F2} GHz";
+                            }
+                        }
+                    }
+                    catch { }
+
+                    // 2. WMI for core count, logical threads, L2/L3 cache
+                    try
+                    {
+                        using var searcher = new System.Management.ManagementObjectSearcher(
+                            "SELECT Name, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, L2CacheSize, L3CacheSize, Manufacturer FROM Win32_Processor");
+                        foreach (System.Management.ManagementObject obj in searcher.Get())
+                        {
+                            if (string.IsNullOrEmpty(cpu.ModelName) || cpu.ModelName == "Processor System")
+                                cpu.ModelName = obj["Name"]?.ToString()?.Trim() ?? cpu.ModelName;
+
+                            if (string.IsNullOrEmpty(cpu.Vendor) || cpu.Vendor == "Processor Vendor")
+                                cpu.Vendor = obj["Manufacturer"]?.ToString()?.Trim() ?? cpu.Vendor;
+
+                            if (int.TryParse(obj["NumberOfCores"]?.ToString(), out var cores) && cores > 0)
+                                cpu.Cores = cores;
+
+                            if (int.TryParse(obj["NumberOfLogicalProcessors"]?.ToString(), out var threads) && threads > 0)
+                                cpu.Threads = threads;
+
+                            if (int.TryParse(obj["L2CacheSize"]?.ToString(), out var l2Kb) && l2Kb > 0)
+                            {
+                                cpu.L2Cache = l2Kb >= 1024 ? $"{l2Kb / 1024.0:F1} MB Total L2" : $"{l2Kb} KB Total L2";
+                            }
+
+                            if (int.TryParse(obj["L3CacheSize"]?.ToString(), out var l3Kb) && l3Kb > 0)
+                            {
+                                cpu.L3Cache = l3Kb >= 1024 ? $"{l3Kb / 1024.0:F0} MB Smart Cache (Unified)" : $"{l3Kb} KB Smart Cache (Unified)";
+                            }
+                            break;
+                        }
+                    }
+                    catch { }
+
+                    PopulateInstructionSets(cpu);
+                    cpu.L1DataCache = $"32 KB per Core ({cpu.Cores} instances)";
+                    cpu.L1InstructionCache = $"32 KB per Core ({cpu.Cores} instances)";
+                }
             }
             catch { }
 
-            // Read CPU Caches from sysfs if available
+            // Read CPU Caches from sysfs if available on Linux
             try
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && Directory.Exists("/sys/devices/system/cpu/cpu0/cache"))
@@ -310,6 +421,34 @@ namespace SharedCore.Services
             return cpu;
         }
 
+        private static void PopulateInstructionSets(CpuDetailedInfo cpu)
+        {
+            var list = new List<string>();
+            try
+            {
+                if (System.Runtime.Intrinsics.X86.X86Base.IsSupported) list.Add("x86-64 (64-Bit)");
+                if (System.Runtime.Intrinsics.X86.Avx2.IsSupported) list.Add("AVX2 (Vektor & AI)");
+                else if (System.Runtime.Intrinsics.X86.Avx.IsSupported) list.Add("AVX (256-bit)");
+                if (System.Runtime.Intrinsics.X86.Fma.IsSupported) list.Add("FMA3 (Komputasi)");
+                if (System.Runtime.Intrinsics.X86.Aes.IsSupported) list.Add("AES-NI (Enkripsi)");
+                if (System.Runtime.Intrinsics.X86.Sse42.IsSupported) list.Add("SSE4.2 (Multimedia)");
+                else if (System.Runtime.Intrinsics.X86.Sse41.IsSupported) list.Add("SSE4.1");
+                if (System.Runtime.Intrinsics.X86.Ssse3.IsSupported) list.Add("SSSE3");
+                if (System.Runtime.Intrinsics.X86.Sse3.IsSupported) list.Add("SSE3");
+                if (System.Runtime.Intrinsics.X86.Sse2.IsSupported) list.Add("SSE2");
+                if (System.Runtime.Intrinsics.X86.Sse.IsSupported) list.Add("SSE");
+                if (System.Runtime.Intrinsics.X86.Bmi1.IsSupported) list.Add("BMI1");
+                if (System.Runtime.Intrinsics.X86.Bmi2.IsSupported) list.Add("BMI2");
+                if (System.Runtime.Intrinsics.X86.Popcnt.IsSupported) list.Add("POPCNT");
+            }
+            catch { }
+
+            if (list.Count > 0)
+            {
+                cpu.InstructionSets = list;
+            }
+        }
+
         public MemoryDetailedInfo GetMemoryDetails()
         {
             var category = GetCurrentDeviceCategory();
@@ -358,6 +497,68 @@ namespace SharedCore.Services
                         }
                     }
                 }
+                else if (OperatingSystem.IsWindows())
+                {
+                    // 1. Precise RAM metrics via GlobalMemoryStatusEx
+                    try
+                    {
+                        var status = new MEMORYSTATUSEX();
+                        if (GlobalMemoryStatusEx(status))
+                        {
+                            double totalGb = status.ullTotalPhys / (1024.0 * 1024.0 * 1024.0);
+                            double availGb = status.ullAvailPhys / (1024.0 * 1024.0 * 1024.0);
+                            double usedGb = totalGb - availGb;
+
+                            mem.TotalGb = Math.Round(totalGb, 1);
+                            mem.FreeGb = Math.Round(availGb, 1);
+                            mem.UsedGb = Math.Round(usedGb, 1);
+                            mem.UsedPercent = (int)status.dwMemoryLoad;
+
+                            if (status.ullTotalPageFile > status.ullTotalPhys)
+                            {
+                                double pageTotalGb = (status.ullTotalPageFile - status.ullTotalPhys) / (1024.0 * 1024.0 * 1024.0);
+                                double pageAvailGb = (status.ullAvailPageFile > status.ullAvailPhys)
+                                    ? (status.ullAvailPageFile - status.ullAvailPhys) / (1024.0 * 1024.0 * 1024.0)
+                                    : 0;
+                                mem.SwapTotalGb = Math.Round(pageTotalGb, 1);
+                                mem.SwapUsedGb = Math.Round(pageTotalGb - pageAvailGb, 1);
+                            }
+                        }
+                    }
+                    catch { }
+
+                    // 2. Physical RAM stick details via Win32_PhysicalMemory
+                    try
+                    {
+                        using var searcher = new System.Management.ManagementObjectSearcher(
+                            "SELECT Capacity, Speed, SMBIOSMemoryType, Manufacturer, PartNumber, FormFactor FROM Win32_PhysicalMemory");
+                        int detectedSpeed = 0;
+                        string detectedType = "";
+
+                        foreach (System.Management.ManagementObject obj in searcher.Get())
+                        {
+                            if (int.TryParse(obj["Speed"]?.ToString(), out var sp) && sp > detectedSpeed)
+                                detectedSpeed = sp;
+
+                            if (int.TryParse(obj["SMBIOSMemoryType"]?.ToString(), out var smType))
+                            {
+                                detectedType = smType switch
+                                {
+                                    34 => "DDR5",
+                                    26 => "DDR4",
+                                    24 => "DDR3",
+                                    _ => detectedType
+                                };
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(detectedType))
+                        {
+                            mem.MemoryType = detectedSpeed > 0 ? $"{detectedType}-{detectedSpeed}" : detectedType;
+                        }
+                    }
+                    catch { }
+                }
                 else
                 {
                     var gc = GC.GetGCMemoryInfo();
@@ -400,7 +601,7 @@ namespace SharedCore.Services
                         storage.FreeGb = Math.Round(d.AvailableFreeSpace / (1024.0 * 1024.0 * 1024.0), 1);
                         storage.UsedGb = Math.Round(storage.TotalGb - storage.FreeGb, 1);
                         storage.UsedPercent = (int)Math.Round((storage.UsedGb / storage.TotalGb) * 100);
-                        storage.FileSystem = d.DriveFormat ?? "ext4/NTFS";
+                        storage.FileSystem = d.DriveFormat ?? "NTFS";
                         storage.MountPoint = d.RootDirectory.FullName;
                         break;
                     }
@@ -408,7 +609,7 @@ namespace SharedCore.Services
             }
             catch { }
 
-            // 2. Read real hardware disk model and HDD/SSD rotational flag from Linux /sys/block/
+            // 2. Read real hardware disk model and HDD/SSD rotational flag
             try
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && Directory.Exists("/sys/block"))
@@ -470,6 +671,59 @@ namespace SharedCore.Services
                         }
                     }
                 }
+                else if (OperatingSystem.IsWindows())
+                {
+                    try
+                    {
+                        using var searcher = new System.Management.ManagementObjectSearcher(
+                            "SELECT Model, InterfaceType, MediaType, Size FROM Win32_DiskDrive");
+                        foreach (System.Management.ManagementObject obj in searcher.Get())
+                        {
+                            string model = (obj["Model"]?.ToString() ?? "").Trim();
+                            string iface = (obj["InterfaceType"]?.ToString() ?? "").Trim();
+                            string media = (obj["MediaType"]?.ToString() ?? "").Trim();
+
+                            if (!string.IsNullOrEmpty(model))
+                            {
+                                storage.DiskModel = model;
+                                bool isNvme = model.Contains("NVMe", StringComparison.OrdinalIgnoreCase) ||
+                                              model.Contains("MTFDK", StringComparison.OrdinalIgnoreCase) ||
+                                              model.Contains("MZAL", StringComparison.OrdinalIgnoreCase) ||
+                                              model.Contains("PCIe", StringComparison.OrdinalIgnoreCase) ||
+                                              iface.Equals("SCSI", StringComparison.OrdinalIgnoreCase);
+
+                                bool isHdd = media.Contains("Rotational", StringComparison.OrdinalIgnoreCase) ||
+                                             model.Contains("HDD", StringComparison.OrdinalIgnoreCase) ||
+                                             model.Contains("Barracuda", StringComparison.OrdinalIgnoreCase);
+
+                                storage.IsRotationalHdd = isHdd;
+                                if (isHdd)
+                                {
+                                    storage.InterfaceType = "SATA III (Mechanical HDD / 7200 RPM)";
+                                    storage.TrimStatus = "Tidak Berlaku (Mechanical HDD)";
+                                    storage.SequentialReadMb = 135.0;
+                                    storage.SequentialWriteMb = 118.0;
+                                }
+                                else if (isNvme)
+                                {
+                                    storage.InterfaceType = "NVMe M.2 PCIe Gen 3.0 / 4.0";
+                                    storage.SequentialReadMb = 3500.0;
+                                    storage.SequentialWriteMb = 3000.0;
+                                    storage.TrimStatus = "Didukung & Aktif (TRIM Enabled)";
+                                }
+                                else
+                                {
+                                    storage.InterfaceType = "SATA III Solid State Drive";
+                                    storage.SequentialReadMb = 540.0;
+                                    storage.SequentialWriteMb = 490.0;
+                                    storage.TrimStatus = "Didukung & Aktif (TRIM Enabled)";
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    catch { }
+                }
             }
             catch { }
 
@@ -529,6 +783,72 @@ namespace SharedCore.Services
 
                     if (File.Exists("/sys/class/dmi/id/bios_date"))
                         mb.BiosReleaseDate = File.ReadAllText("/sys/class/dmi/id/bios_date").Trim();
+                }
+                else if (OperatingSystem.IsWindows())
+                {
+                    // 1. Registry HKLM\HARDWARE\DESCRIPTION\System\BIOS (instant)
+                    try
+                    {
+                        using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
+                        if (key != null)
+                        {
+                            string? boardMfg = key.GetValue("BaseBoardManufacturer") as string;
+                            string? sysMfg = key.GetValue("SystemManufacturer") as string;
+                            string? boardProd = key.GetValue("BaseBoardProduct") as string;
+                            string? biosVend = key.GetValue("BIOSVendor") as string;
+                            string? biosVer = key.GetValue("BIOSVersion") as string;
+                            string? biosDate = key.GetValue("BIOSReleaseDate") as string;
+
+                            if (!string.IsNullOrWhiteSpace(boardMfg)) mb.Manufacturer = boardMfg.Trim();
+                            else if (!string.IsNullOrWhiteSpace(sysMfg)) mb.Manufacturer = sysMfg.Trim();
+
+                            if (!string.IsNullOrWhiteSpace(boardProd)) mb.ProductModel = boardProd.Trim();
+                            if (!string.IsNullOrWhiteSpace(biosVend)) mb.BiosVendor = biosVend.Trim();
+                            if (!string.IsNullOrWhiteSpace(biosVer)) mb.BiosVersion = biosVer.Trim();
+                            if (!string.IsNullOrWhiteSpace(biosDate)) mb.BiosReleaseDate = biosDate.Trim();
+                        }
+                    }
+                    catch { }
+
+                    // 2. WMI Win32_BaseBoard & Win32_Bios
+                    try
+                    {
+                        using var bbSearcher = new System.Management.ManagementObjectSearcher(
+                            "SELECT Manufacturer, Product, SerialNumber, Version FROM Win32_BaseBoard");
+                        foreach (System.Management.ManagementObject obj in bbSearcher.Get())
+                        {
+                            string? mfg = obj["Manufacturer"]?.ToString()?.Trim();
+                            string? prod = obj["Product"]?.ToString()?.Trim();
+                            string? sn = obj["SerialNumber"]?.ToString()?.Trim();
+
+                            if (!string.IsNullOrEmpty(mfg)) mb.Manufacturer = mfg;
+                            if (!string.IsNullOrEmpty(prod)) mb.ProductModel = prod;
+                            if (!string.IsNullOrEmpty(sn) && !sn.Equals("None", StringComparison.OrdinalIgnoreCase))
+                                mb.SerialNumber = sn;
+                            break;
+                        }
+
+                        using var biosSearcher = new System.Management.ManagementObjectSearcher(
+                            "SELECT Manufacturer, SMBIOSBIOSVersion, ReleaseDate FROM Win32_Bios");
+                        foreach (System.Management.ManagementObject obj in biosSearcher.Get())
+                        {
+                            string? bMfg = obj["Manufacturer"]?.ToString()?.Trim();
+                            string? bVer = obj["SMBIOSBIOSVersion"]?.ToString()?.Trim();
+                            string? bDate = obj["ReleaseDate"]?.ToString()?.Trim();
+
+                            if (!string.IsNullOrEmpty(bMfg)) mb.BiosVendor = bMfg;
+                            if (!string.IsNullOrEmpty(bVer)) mb.BiosVersion = bVer;
+                            if (!string.IsNullOrEmpty(bDate))
+                            {
+                                if (bDate.Length >= 8 && DateTime.TryParseExact(bDate.Substring(0, 8), "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out var dt))
+                                    mb.BiosReleaseDate = dt.ToString("yyyy-MM-dd");
+                                else
+                                    mb.BiosReleaseDate = bDate;
+                            }
+                            break;
+                        }
+                    }
+                    catch { }
                 }
             }
             catch { }

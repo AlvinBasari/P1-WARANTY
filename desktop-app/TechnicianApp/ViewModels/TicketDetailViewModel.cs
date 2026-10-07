@@ -45,7 +45,7 @@ namespace TechnicianApp.ViewModels
         public string RustdeskSessionId => Ticket.RemoteSession?.RustdeskSessionId ?? "-";
 
         public bool HasLocation => Ticket.LocationLat.HasValue && Ticket.LocationLng.HasValue;
-        public string LocationCoordinatesText => HasLocation ? $"{Ticket.LocationLat:F5}, {Ticket.LocationLng:F5}" : "Lokasi belum terkalibrasi";
+        public string LocationCoordinatesText => (Ticket.LocationLat.HasValue && Ticket.LocationLng.HasValue) ? $"{Ticket.LocationLat.Value.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)}, {Ticket.LocationLng.Value.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)}" : "Lokasi belum terkalibrasi";
         public string LocationLabelText => Ticket.Device?.LocationLabel ?? "Alamat Klien";
 
         public string CustomerName => Ticket.User?.Name ?? "Pelanggan";
@@ -59,13 +59,16 @@ namespace TechnicianApp.ViewModels
         public string WarrantyStatusText => Ticket.Device?.Warranty?.Status?.ToUpperInvariant() ?? "AKTIF";
         public string WarrantyExpiryText => Ticket.Device?.Warranty?.WarrantyEnd ?? "1 Tahun Jaminan";
 
+        private readonly Action<ConfirmDialogViewModel>? _showConfirm;
+
         public TicketDetailViewModel(
             ApiClient apiClient,
             RustDeskService rustDeskService,
             RepairRequestDto ticket,
             Action onBack,
             Action<RepairRequestDto> onOpenTracking,
-            Action<RepairRequestDto> onOpenInvoice)
+            Action<RepairRequestDto> onOpenInvoice,
+            Action<ConfirmDialogViewModel>? showConfirm = null)
         {
             _apiClient = apiClient;
             _rustDeskService = rustDeskService;
@@ -73,6 +76,7 @@ namespace TechnicianApp.ViewModels
             _onBack = onBack;
             _onOpenTracking = onOpenTracking;
             _onOpenInvoice = onOpenInvoice;
+            _showConfirm = showConfirm;
 
             NewScheduleInput = ticket.PreferredSchedule ?? DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:00");
         }
@@ -141,11 +145,50 @@ namespace TechnicianApp.ViewModels
         [RelayCommand]
         public async Task EndRemoteSessionAsync(string outcome)
         {
+            if (IsLoading) return;
             if (Ticket.RemoteSession == null || Ticket.RemoteSession.Id == 0)
             {
                 StatusMessage = "Tidak ada sesi remote aktif yang dapat diakhiri.";
                 return;
             }
+
+            if (_showConfirm != null)
+            {
+                bool isSuccess = outcome.Equals("completed", StringComparison.OrdinalIgnoreCase);
+                string title = isSuccess ? "Konfirmasi Selesai Sesi Remote" : "Konfirmasi Sesi Remote Gagal";
+                string badge = isSuccess ? "SUKSES" : "ESKALASI";
+                string dialogType = isSuccess ? "success" : "warning";
+                string confirmBtn = isSuccess ? "Ya, Tandai Selesai" : "Ya, Tandai Gagal & Lanjutkan";
+
+                string previewNote = !string.IsNullOrWhiteSpace(DiagnosisNotes)
+                    ? $"Catatan Diagnosa:\n\"{DiagnosisNotes.Trim()}\""
+                    : "Catatan Diagnosa: (Kosong)\n💡 Catatan: Anda dapat mengisi ringkasan diagnosa/tindakan di panel atas sebelum menyelesaikan.";
+
+                string message = isSuccess
+                    ? "Apakah Anda yakin ingin menyelesaikan sesi remote ini? Sesi koneksi RustDesk akan diakhiri dan status tiket diperbarui menjadi 'Selesai' di sistem cloud PT JTS."
+                    : "Apakah Anda yakin ingin menandai sesi remote ini belum terselesaikan? Tiket akan dialihkan untuk penanganan servis on-site / workshop.";
+
+                _showConfirm(new ConfirmDialogViewModel(
+                    title: title,
+                    message: message,
+                    onConfirm: () => _ = ExecuteEndRemoteSessionAsync(outcome),
+                    onCancel: () => { },
+                    detailNote: previewNote,
+                    confirmText: confirmBtn,
+                    cancelText: "Batal / Tinjau",
+                    dialogType: dialogType,
+                    badgeText: badge
+                ));
+            }
+            else
+            {
+                await ExecuteEndRemoteSessionAsync(outcome);
+            }
+        }
+
+        public async Task ExecuteEndRemoteSessionAsync(string outcome)
+        {
+            if (IsLoading || Ticket.RemoteSession == null || Ticket.RemoteSession.Id == 0) return;
 
             IsLoading = true;
             StatusMessage = null;
@@ -234,6 +277,31 @@ namespace TechnicianApp.ViewModels
         [RelayCommand]
         public async Task MarkCompletedOnSiteAsync()
         {
+            if (IsLoading) return;
+
+            if (_showConfirm != null)
+            {
+                _showConfirm(new ConfirmDialogViewModel(
+                    title: "Konfirmasi Selesai di Tempat",
+                    message: "Pastikan seluruh pengujian hardware telah diverifikasi langsung di hadapan pelanggan sebelum menutup tiket ini.",
+                    onConfirm: () => _ = ExecuteMarkCompletedOnSiteAsync(),
+                    onCancel: () => { },
+                    detailNote: $"Model: {DeviceModel} (SN: {DeviceSerial})\nKlien: {CustomerName}",
+                    confirmText: "Ya, Selesai di Tempat",
+                    cancelText: "Batal",
+                    dialogType: "success",
+                    badgeText: "ON-SITE SELESAI"
+                ));
+            }
+            else
+            {
+                await ExecuteMarkCompletedOnSiteAsync();
+            }
+        }
+
+        public async Task ExecuteMarkCompletedOnSiteAsync()
+        {
+            if (IsLoading) return;
             IsLoading = true;
             StatusMessage = null;
 
@@ -257,6 +325,31 @@ namespace TechnicianApp.ViewModels
         [RelayCommand]
         public async Task EscalateToWorkshopAsync()
         {
+            if (IsLoading) return;
+
+            if (_showConfirm != null)
+            {
+                _showConfirm(new ConfirmDialogViewModel(
+                    title: "Konfirmasi Bawa ke Service Center",
+                    message: "Unit laptop/PC tidak dapat ditangani tuntas di lokasi dan perlu dibawa ke Workshop resmi PT JTS. Alur tracking 5 tahap akan segera diaktifkan.",
+                    onConfirm: () => _ = ExecuteEscalateToWorkshopAsync(),
+                    onCancel: () => { },
+                    detailNote: $"Model: {DeviceModel} (SN: {DeviceSerial})\nAlamat Klien: {CustomerAddress}",
+                    confirmText: "Bawa ke Workshop",
+                    cancelText: "Batal",
+                    dialogType: "warning",
+                    badgeText: "WORKSHOP ESCALATION"
+                ));
+            }
+            else
+            {
+                await ExecuteEscalateToWorkshopAsync();
+            }
+        }
+
+        public async Task ExecuteEscalateToWorkshopAsync()
+        {
+            if (IsLoading) return;
             IsLoading = true;
             StatusMessage = null;
 

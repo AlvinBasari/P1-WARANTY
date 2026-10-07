@@ -55,6 +55,12 @@ namespace TechnicianApp.ViewModels
         [ObservableProperty]
         private bool _isInvoiceDialogOpen;
 
+        [ObservableProperty]
+        private ConfirmDialogViewModel? _confirmDialogViewModel;
+
+        [ObservableProperty]
+        private bool _isConfirmDialogOpen;
+
         public bool IsAuthPage => CurrentPage == "auth";
         public bool IsQueuePage => CurrentPage == "queue";
         public bool IsDetailPage => CurrentPage == "detail";
@@ -73,6 +79,34 @@ namespace TechnicianApp.ViewModels
             IsDarkMode = !saved.Equals("Light", StringComparison.OrdinalIgnoreCase);
 
             _authViewModel = new TechnicianAuthViewModel(_apiClient, OnLoginSuccess);
+        }
+
+        public void ShowConfirmDialog(ConfirmDialogViewModel dialog)
+        {
+            var origConfirm = dialog.ConfirmAction;
+            var origCancel = dialog.CancelAction;
+
+            dialog.SetCallbacks(
+                onConfirm: () =>
+                {
+                    CloseConfirmDialog();
+                    origConfirm?.Invoke();
+                },
+                onCancel: () =>
+                {
+                    CloseConfirmDialog();
+                    origCancel?.Invoke();
+                }
+            );
+
+            ConfirmDialogViewModel = dialog;
+            IsConfirmDialogOpen = true;
+        }
+
+        public void CloseConfirmDialog()
+        {
+            IsConfirmDialogOpen = false;
+            ConfirmDialogViewModel = null;
         }
 
         public void OnLoginSuccess(UserDto user)
@@ -100,7 +134,8 @@ namespace TechnicianApp.ViewModels
                 ticket,
                 OnBackToQueue,
                 OnQuickTracking,
-                OnQuickInvoice
+                OnQuickInvoice,
+                ShowConfirmDialog
             );
 
             CurrentPage = "detail";
@@ -135,7 +170,8 @@ namespace TechnicianApp.ViewModels
             TrackingDialogViewModel = new WorkshopTrackingViewModel(
                 _apiClient,
                 ticket,
-                () => IsTrackingDialogOpen = false
+                () => IsTrackingDialogOpen = false,
+                ShowConfirmDialog
             );
             IsTrackingDialogOpen = true;
         }
@@ -145,7 +181,8 @@ namespace TechnicianApp.ViewModels
             InvoiceDialogViewModel = new InvoiceManagerViewModel(
                 _apiClient,
                 ticket,
-                () => IsInvoiceDialogOpen = false
+                () => IsInvoiceDialogOpen = false,
+                ShowConfirmDialog
             );
             IsInvoiceDialogOpen = true;
         }
@@ -175,6 +212,21 @@ namespace TechnicianApp.ViewModels
 
         [RelayCommand]
         public void Logout()
+        {
+            ShowConfirmDialog(new ConfirmDialogViewModel(
+                title: "Konfirmasi Keluar Akun",
+                message: "Apakah Anda yakin ingin keluar dari Workbench Teknisi PT JTS di perangkat ini? Sesi koneksi remote aktif atau perubahan yang belum disimpan dapat terputus.",
+                onConfirm: ExecuteLogout,
+                onCancel: () => { },
+                detailNote: $"Akun Teknisi Aktif: {TechnicianName} ({TechnicianEmail})",
+                confirmText: "Ya, Keluar Akun",
+                cancelText: "Batal",
+                dialogType: "danger",
+                badgeText: "LOGOUT TEKNISI"
+            ));
+        }
+
+        public void ExecuteLogout()
         {
             _apiClient.ClearToken();
             CurrentUser = null;

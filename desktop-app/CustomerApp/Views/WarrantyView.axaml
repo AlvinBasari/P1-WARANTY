@@ -66,7 +66,7 @@
                             <!-- Device Model Name & Physical Status -->
                             <StackPanel Grid.Row="0" Spacing="6">
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Grid.Column="0" Text="{Binding Device.Model, FallbackValue={Binding LocalModel}}"
+                                    <TextBlock Grid.Column="0" Text="{Binding DisplayModel}"
                                                FontSize="18" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}"
                                                TextWrapping="Wrap" VerticalAlignment="Center" />
                                     <Border Grid.Column="1" Background="{DynamicResource VantageAccentSubtleBrush}"
@@ -86,7 +86,7 @@
                                 <!-- Row 1: Serial number -->
                                 <Grid ColumnDefinitions="100,*,Auto">
                                     <TextBlock Grid.Column="0" Text="Serial Number" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="{Binding Device.SerialNumber, FallbackValue={Binding LocalSerial}}"
+                                    <TextBlock Grid.Column="1" Text="{Binding DisplaySerialNumber}"
                                                FontFamily="Consolas,Monospace" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}" VerticalAlignment="Center" Margin="4,0,8,0" TextTrimming="CharacterEllipsis" />
                                     <Button Grid.Column="2" Command="{Binding CopySerialCommand}"
                                             Background="{DynamicResource VantageBgBrush}" BorderBrush="{DynamicResource VantageBorderBrush}" BorderThickness="1"
@@ -102,7 +102,7 @@
                                 <!-- Row 2: BIOS Hardware ID -->
                                 <Grid ColumnDefinitions="100,*,Auto">
                                     <TextBlock Grid.Column="0" Text="Hardware ID" FontSize="12" Foreground="{DynamicResource VantageTextMutedBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="{Binding Device.HardwareId, FallbackValue={Binding LocalHardwareId}}"
+                                    <TextBlock Grid.Column="1" Text="{Binding DisplayHardwareId}"
                                                FontFamily="Consolas,Monospace" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource VantageTextBrush}"
                                                TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="4,0,8,0" />
                                     <Button Grid.Column="2" Command="{Binding CopyHardwareIdCommand}"

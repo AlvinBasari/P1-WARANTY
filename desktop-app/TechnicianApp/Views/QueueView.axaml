@@ -58,6 +58,7 @@
                     <TextBox Grid.Column="0"
                              Text="{Binding SearchKeyword, Mode=TwoWay}"
                              Watermark="Cari nama klien, model perangkat, nomor seri, atau deskripsi keluhan..."
+                             Classes="clearButton"
                              FontSize="13"
                              Padding="12,9"
                              Margin="0,0,12,0"/>
@@ -137,6 +138,23 @@
                     <PathIcon Data="{DynamicResource IconInfo}" Width="32" Height="32" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="Tidak Ada Tiket Ditemukan" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="Tidak ada antrean tiket yang cocok dengan kriteria pencarian atau filter yang dipilih." FontSize="11" Foreground="{DynamicResource VantageTextMutedBrush}" TextWrapping="Wrap" TextAlignment="Center"/>
+                    <Button Command="{Binding ResetFilterCommand}"
+                            Background="{DynamicResource VantageCardSubtleBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            Foreground="{DynamicResource VantageAccentBrush}"
+                            FontWeight="SemiBold"
+                            FontSize="11"
+                            Padding="12,6"
+                            CornerRadius="6"
+                            HorizontalAlignment="Center"
+                            Margin="0,4,0,0"
+                            Cursor="Hand">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{DynamicResource IconRefresh}" Width="11" Height="11" Foreground="{DynamicResource VantageAccentBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="Reset Filter / Tampilkan Semua" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Border>
 

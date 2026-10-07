@@ -3,7 +3,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { toast } from 'sonner';
 import api from '../services/api';
-import { ShieldCheck, Plus, QrCode, Cpu, Search, RefreshCw, X, ExternalLink, AlertCircle, CheckCircle2, User } from 'lucide-react';
+import { ShieldCheck, Plus, QrCode, Cpu, Search, RefreshCw, X, ExternalLink, AlertCircle, CheckCircle2, User, Printer } from 'lucide-react';
 import { CopyButton } from '../components/CopyButton';
 import { TableSkeleton } from '../components/SkeletonLoader';
 
@@ -13,7 +13,7 @@ export const Warranties: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedQr, setSelectedQr] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired' | 'unlinked'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expiring_soon' | 'expired' | 'unlinked'>('all');
 
   // Form State
   const [hardwareId, setHardwareId] = useState('');
@@ -72,9 +72,14 @@ export const Warranties: React.FC = () => {
   const filteredDevices = devices.filter((dev) => {
     const warranty = dev.warranty;
     const isExpired = warranty?.status === 'expired' || (warranty?.warranty_end && new Date(warranty.warranty_end) < new Date());
+    const endDate = warranty?.warranty_end ? new Date(warranty.warranty_end) : null;
+    const now = new Date();
+    const daysRemaining = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+    const isExpiringSoon = !isExpired && daysRemaining !== null && daysRemaining <= 30 && daysRemaining > 0;
     const isUnlinked = !dev.user;
 
-    if (statusFilter === 'active' && isExpired) return false;
+    if (statusFilter === 'active' && (isExpired || isExpiringSoon)) return false;
+    if (statusFilter === 'expiring_soon' && !isExpiringSoon) return false;
     if (statusFilter === 'expired' && !isExpired) return false;
     if (statusFilter === 'unlinked' && !isUnlinked) return false;
 
@@ -83,11 +88,13 @@ export const Warranties: React.FC = () => {
       const matchModel = dev.model?.toLowerCase().includes(q);
       const matchSn = dev.serial_number?.toLowerCase().includes(q);
       const matchHw = dev.hardware_id?.toLowerCase().includes(q);
+      const matchQr = dev.qr_token?.toLowerCase().includes(q);
       const matchUser = dev.user?.name?.toLowerCase().includes(q) || dev.user?.email?.toLowerCase().includes(q);
-      return matchModel || matchSn || matchHw || matchUser;
+      return matchModel || matchSn || matchHw || matchQr || matchUser;
     }
-    return true;
   });
+
+  const selectedDevice = devices.find((d) => d.qr_token === selectedQr);
 
   return (
     <div className="space-y-6">
@@ -136,6 +143,12 @@ export const Warranties: React.FC = () => {
             Garansi Aktif
           </button>
           <button
+            onClick={() => setStatusFilter('expiring_soon')}
+            className={`px-3 py-1 rounded-btn transition-all ${statusFilter === 'expiring_soon' ? 'bg-alert text-white font-semibold shadow-card' : 'text-ink-muted hover:text-ink'}`}
+          >
+            Segera Berakhir (&lt; 30 Hari)
+          </button>
+          <button
             onClick={() => setStatusFilter('expired')}
             className={`px-3 py-1 rounded-btn transition-all ${statusFilter === 'expired' ? 'bg-fault text-white font-semibold shadow-card' : 'text-ink-muted hover:text-ink'}`}
           >
@@ -156,8 +169,17 @@ export const Warranties: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari Serial, BIOS, Model, Pemilik..."
-            className="w-full pl-8 pr-3 py-1.5 bg-paper border border-mist rounded-btn text-xs focus:outline-none focus:border-signal text-ink placeholder:text-ink-subtle"
+            className="w-full pl-8 pr-8 py-1.5 bg-paper border border-mist rounded-btn text-xs focus:outline-none focus:border-signal text-ink placeholder:text-ink-subtle"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-ink p-0.5 rounded-full"
+              title="Hapus pencarian"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -182,13 +204,29 @@ export const Warranties: React.FC = () => {
                 {filteredDevices.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-5 py-12 text-center text-ink-muted text-xs">
-                      Tidak ada data perangkat yang sesuai dengan filter pencarian.
+                      <p>Tidak ada data perangkat yang sesuai dengan filter pencarian.</p>
+                      {(searchQuery || statusFilter !== 'all') && (
+                        <button
+                          onClick={() => {
+                            setSearchQuery('');
+                            setStatusFilter('all');
+                          }}
+                          className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-mist hover:bg-mist-dark text-ink rounded-btn text-xs font-medium transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                          <span>Bersihkan Filter</span>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ) : (
                   filteredDevices.map((dev) => {
                     const warranty = dev.warranty;
                     const isExpired = warranty?.status === 'expired' || (warranty?.warranty_end && new Date(warranty.warranty_end) < new Date());
+                    const endDate = warranty?.warranty_end ? new Date(warranty.warranty_end) : null;
+                    const now = new Date();
+                    const daysRemaining = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                    const isExpiringSoon = !isExpired && daysRemaining !== null && daysRemaining <= 30 && daysRemaining > 0;
 
                     return (
                       <tr key={dev.id} className="hover:bg-mist-light/40 transition-colors">
@@ -230,11 +268,22 @@ export const Warranties: React.FC = () => {
                         </td>
 
                         <td className="px-5 py-3.5">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-btn text-[10px] font-semibold ${
-                            isExpired ? 'bg-fault-subtle text-fault border border-fault-border' : 'bg-stable-subtle text-stable border border-stable/30'
-                          }`}>
-                            {isExpired ? 'EXPIRED' : 'AKTIF'}
-                          </span>
+                          {isExpired ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-btn text-[10px] font-semibold bg-fault-subtle text-fault border border-fault-border">
+                              EXPIRED
+                            </span>
+                          ) : isExpiringSoon ? (
+                            <span 
+                              className="inline-flex items-center px-2 py-0.5 rounded-btn text-[10px] font-semibold bg-alert-subtle text-alert border border-alert-border"
+                              title={`Perhatian: Sisa masa garansi tersisa ${daysRemaining} hari`}
+                            >
+                              SEGERA HABIS ({daysRemaining} HR)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-btn text-[10px] font-semibold bg-stable-subtle text-stable border border-stable/30">
+                              AKTIF
+                            </span>
+                          )}
                         </td>
 
                         <td className="px-5 py-3.5 text-right">
@@ -282,37 +331,116 @@ export const Warranties: React.FC = () => {
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <Dialog.Panel className="w-full max-w-sm transform overflow-hidden rounded-card bg-paper-card text-left align-middle shadow-modal border border-mist transition-all p-5 space-y-4 text-center">
+                <Dialog.Panel className="w-full max-w-sm transform overflow-hidden rounded-card bg-paper-card text-left align-middle shadow-modal border border-mist transition-all p-5 space-y-4">
                   <div className="flex items-center justify-between pb-3 border-b border-mist">
-                    <Dialog.Title as="h3" className="text-sm font-display font-bold text-ink">
-                      Stiker QR Code Fisik
-                    </Dialog.Title>
+                    <div>
+                      <Dialog.Title as="h3" className="text-sm font-display font-bold text-ink">
+                        Stiker Aset &amp; QR Garansi Fisik (FR-07)
+                      </Dialog.Title>
+                      <span className="text-[11px] text-ink-muted">Format label stiker barcode resmi untuk ditempel pada unit.</span>
+                    </div>
                     <button onClick={() => setSelectedQr(null)} className="p-1 rounded-btn hover:bg-mist-light text-ink-muted">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <div className="p-4 bg-paper rounded-card border border-mist flex justify-center">
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`http://localhost:5174/claim/${selectedQr}`)}`}
-                      alt="QR Code Stiker"
-                      className="w-44 h-44 rounded-btn"
-                    />
+                  {/* Physical Sticker Card Preview */}
+                  <div className="p-4 bg-white rounded border border-ink/80 shadow-sm text-center space-y-2 text-ink">
+                    <div className="border-b border-mist pb-2">
+                      <div className="text-[11px] font-bold tracking-wider uppercase font-mono text-ink">PT JAYA TEKNOLOGI SOLUSI</div>
+                      <div className="text-[9px] text-ink-subtle uppercase tracking-widest font-mono">OFFICIAL HARDWARE &amp; WARRANTY ASSET TAG</div>
+                    </div>
+
+                    <div className="flex justify-center py-1">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`http://localhost:5174/claim/${selectedQr}`)}`}
+                        alt="QR Code Stiker"
+                        className="w-36 h-36 border border-mist p-1 rounded"
+                      />
+                    </div>
+
+                    <div className="bg-paper p-2 rounded border border-mist text-left text-[10px] space-y-1 font-mono">
+                      <div className="flex justify-between">
+                        <span className="text-ink-subtle">MODEL:</span>
+                        <span className="font-bold text-ink truncate max-w-[190px]">{selectedDevice?.model || 'Unit Hardware'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-ink-subtle">SERIAL NO:</span>
+                        <span className="font-bold text-ink">{selectedDevice?.serial_number || '-'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-ink-subtle">TOKEN QR:</span>
+                        <span className="font-bold text-circuit flex items-center gap-1">
+                          {selectedQr}
+                          {selectedQr && <CopyButton text={selectedQr} label="Token" />}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-[8.5px] text-ink-subtle uppercase tracking-tight">
+                      Pindai dengan kamera smartphone untuk mengajukan klaim servis resmi
+                    </div>
                   </div>
 
-                  <div className="bg-paper p-2 rounded-btn text-[10px] font-mono text-ink-muted border border-mist break-all flex items-center justify-between">
-                    <span>Token: {selectedQr}</span>
-                    {selectedQr && <CopyButton text={selectedQr} label="Token QR" />}
-                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const printWin = window.open('', '_blank', 'width=500,height=600');
+                        if (printWin) {
+                          printWin.document.write(`
+                            <!DOCTYPE html>
+                            <html>
+                              <head>
+                                <title>Stiker Aset - ${selectedDevice?.serial_number || selectedQr}</title>
+                                <style>
+                                  @page { size: 70mm 50mm; margin: 2mm; }
+                                  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+                                  body { background: white; color: black; display: flex; align-items: center; justify-content: center; height: 100vh; }
+                                  .sticker { border: 1.5px solid black; padding: 6px 8px; width: 66mm; height: 46mm; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
+                                  .brand { font-size: 8px; font-weight: 800; letter-spacing: 0.5px; border-bottom: 1px solid black; padding-bottom: 2px; }
+                                  .qr-row { display: flex; align-items: center; justify-content: space-around; margin: 3px 0; }
+                                  .qr-img { width: 72px; height: 72px; }
+                                  .meta { font-size: 7.5px; text-align: left; line-height: 1.35; font-family: monospace; }
+                                  .meta b { font-weight: 800; }
+                                  .footer-note { font-size: 6.5px; letter-spacing: 0.2px; text-transform: uppercase; border-top: 0.5px solid #CBD5E1; padding-top: 2px; }
+                                </style>
+                              </head>
+                              <body>
+                                <div class="sticker">
+                                  <div class="brand">PT JAYA TEKNOLOGI SOLUSI • ASSET TAG</div>
+                                  <div class="qr-row">
+                                    <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`http://localhost:5174/claim/${selectedQr}`)}" />
+                                    <div class="meta">
+                                      <div><b>SN:</b> ${selectedDevice?.serial_number || '-'}</div>
+                                      <div><b>MOD:</b> ${(selectedDevice?.model || '').substring(0, 16)}</div>
+                                      <div><b>TOK:</b> ${selectedQr}</div>
+                                    </div>
+                                  </div>
+                                  <div class="footer-note">Pindai kamera untuk servis resmi &amp; garansi</div>
+                                </div>
+                                <script>
+                                  window.onload = function() { window.print(); }
+                                </script>
+                              </body>
+                            </html>
+                          `);
+                          printWin.document.close();
+                        }
+                      }}
+                      className="inline-flex items-center justify-center gap-1.5 flex-1 py-2 bg-paper hover:bg-mist-light text-ink border border-mist rounded-btn text-xs font-semibold shadow-card transition-colors cursor-pointer"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-ink-muted" />
+                      <span>Cetak Stiker Fisik</span>
+                    </button>
 
-                  <div className="space-y-2 pt-2">
                     <a
                       href={`http://localhost:5174/claim/${selectedQr}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-center gap-1.5 w-full py-2 bg-circuit hover:bg-circuit-dark text-white rounded-btn text-xs font-semibold shadow-card transition-colors"
+                      className="inline-flex items-center justify-center gap-1.5 flex-1 py-2 bg-circuit hover:bg-circuit-dark text-white rounded-btn text-xs font-semibold shadow-card transition-colors"
                     >
-                      <span>Buka Portal QR Publik</span>
+                      <span>Buka Portal QR</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>
@@ -392,7 +520,7 @@ export const Warranties: React.FC = () => {
                         type="text"
                         required
                         value={serialNumber}
-                        onChange={(e) => setSerialNumber(e.target.value)}
+                        onChange={(e) => setSerialNumber(e.target.value.toUpperCase())}
                         placeholder="Contoh: SN-LENOVO-988231"
                         className="w-full text-xs p-2.5 bg-paper border border-mist rounded-btn font-mono focus:outline-none focus:border-signal text-ink placeholder:text-ink-subtle"
                       />
@@ -406,7 +534,7 @@ export const Warranties: React.FC = () => {
                         type="text"
                         required
                         value={hardwareId}
-                        onChange={(e) => setHardwareId(e.target.value)}
+                        onChange={(e) => setHardwareId(e.target.value.trim())}
                         placeholder="Contoh: MACHINE-f561d272e3324caca6df3ce4046f7c25"
                         className="w-full text-xs p-2.5 bg-paper border border-mist rounded-btn font-mono focus:outline-none focus:border-signal text-ink placeholder:text-ink-subtle"
                       />

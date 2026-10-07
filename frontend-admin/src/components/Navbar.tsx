@@ -13,11 +13,13 @@ import {
   X,
   UserCheck
 } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const navItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -85,7 +87,7 @@ export const Navbar: React.FC = () => {
 
             {/* Logout Button */}
             <button
-              onClick={logout}
+              onClick={() => setShowLogoutModal(true)}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-btn text-mist hover:text-fault hover:bg-fault/10 border border-transparent hover:border-fault/20 transition-all text-xs font-medium"
               title="Keluar dari sesi admin"
             >
@@ -132,6 +134,22 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={logout}
+        variant="warning"
+        title="Konfirmasi Keluar Sesi"
+        description="Apakah Anda yakin ingin keluar dari portal manajemen garansi ini? Sesi autentikasi Anda akan diakhiri."
+        confirmLabel="Ya, Keluar"
+        cancelLabel="Batal"
+        details={[
+          { label: 'Pengguna', value: user?.name || '-' },
+          { label: 'Peran', value: user?.role?.toUpperCase() || '-' }
+        ]}
+      />
     </header>
   );
 };

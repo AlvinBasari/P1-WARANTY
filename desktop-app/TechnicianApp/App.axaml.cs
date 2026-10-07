@@ -30,6 +30,11 @@ namespace TechnicianApp
                 var apiClient = new ApiClient();
                 var rustdeskService = new RustDeskService();
 
+                if (!string.IsNullOrEmpty(PendingSessionId))
+                {
+                    rustdeskService.Connect(PendingSessionId);
+                }
+
                 var mainVm = new TechnicianMainViewModel(apiClient, rustdeskService, themeService);
 
                 desktop.MainWindow = new MainWindow

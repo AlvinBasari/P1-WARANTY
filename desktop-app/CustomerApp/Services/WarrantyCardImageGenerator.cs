@@ -23,23 +23,23 @@ namespace CustomerApp.Services
             using var bitmap = new SKBitmap(width, height, SKColorType.Rgba8888, SKAlphaType.Premul);
             using var canvas = new SKCanvas(bitmap);
 
-            // 1. Background: Clean Crisp Off-White / Ivory Certificate Tone
-            canvas.Clear(SKColor.Parse("#F8FAFC"));
+            // 1. Background: Clean Institutional White
+            canvas.Clear(SKColor.Parse("#FFFFFF"));
 
-            // Decorative inner border frame (Double Gold/Teal Luxury Certificate Border)
-            var outerRect = new SKRoundRect(new SKRect(24, 24, width - 24, height - 24), 16, 16);
+            // 2. High-Precision Corporate Guilloche / Double Border
+            var outerRect = new SKRoundRect(new SKRect(24, 24, width - 24, height - 24), 8, 8);
             using (var outerBorderPaint = new SKPaint
             {
-                Color = SKColor.Parse("#2563EB"),
+                Color = SKColor.Parse("#0F172A"),
                 Style = SKPaintStyle.Stroke,
-                StrokeWidth = 3f,
+                StrokeWidth = 2.5f,
                 IsAntialias = true
             })
             {
                 canvas.DrawRoundRect(outerRect, outerBorderPaint);
             }
 
-            var innerRect = new SKRoundRect(new SKRect(32, 32, width - 32, height - 32), 12, 12);
+            var innerRect = new SKRoundRect(new SKRect(30, 30, width - 30, height - 30), 6, 6);
             using (var innerBorderPaint = new SKPaint
             {
                 Color = SKColor.Parse("#CBD5E1"),
@@ -51,11 +51,11 @@ namespace CustomerApp.Services
                 canvas.DrawRoundRect(innerRect, innerBorderPaint);
             }
 
-            // 2. Header Section (Clean White with Navy & Emerald accents)
-            var headerRect = new SKRoundRect(new SKRect(48, 48, width - 48, 145), 10, 10);
+            // 3. Header Kop Perusahaan
+            var headerRect = new SKRoundRect(new SKRect(48, 48, width - 48, 142), 6, 6);
             using (var headerBg = new SKPaint
             {
-                Color = SKColor.Parse("#FFFFFF"),
+                Color = SKColor.Parse("#F8FAFC"),
                 Style = SKPaintStyle.Fill,
                 IsAntialias = true
             })
@@ -67,18 +67,18 @@ namespace CustomerApp.Services
             {
                 Color = SKColor.Parse("#E2E8F0"),
                 Style = SKPaintStyle.Stroke,
-                StrokeWidth = 1.5f,
+                StrokeWidth = 1f,
                 IsAntialias = true
             })
             {
                 canvas.DrawRoundRect(headerRect, headerBorder);
             }
 
-            // Brand Logo Pill
-            var logoRect = new SKRoundRect(new SKRect(68, 64, 185, 128), 8, 8);
+            // Brand Badge: PT JTS
+            var logoRect = new SKRoundRect(new SKRect(66, 64, 166, 126), 4, 4);
             using (var logoBg = new SKPaint
             {
-                Color = SKColor.Parse("#2563EB"),
+                Color = SKColor.Parse("#0F172A"),
                 Style = SKPaintStyle.Fill,
                 IsAntialias = true
             })
@@ -89,43 +89,54 @@ namespace CustomerApp.Services
             using (var logoTextPaint = new SKPaint
             {
                 Color = SKColors.White,
-                TextSize = 28,
+                TextSize = 24,
                 IsAntialias = true,
-                Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
+                Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Bold)
             })
             {
-                canvas.DrawText("PT JTS", 80, 106, logoTextPaint);
+                canvas.DrawText("PT JTS", 76, 103, logoTextPaint);
             }
 
-            // Header Titles (Dark Navy)
-            using (var titlePaint = new SKPaint
+            // Company Title & Certificate Subheading
+            using (var compTitlePaint = new SKPaint
             {
                 Color = SKColor.Parse("#0F172A"),
-                TextSize = 26,
+                TextSize = 22,
                 IsAntialias = true,
                 Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
             })
             {
-                canvas.DrawText("SERTIFIKAT JAMINAN GARANSI RESMI", 205, 90, titlePaint);
+                canvas.DrawText("PT JAYA TEKNOLOGI SOLUSI", 184, 88, compTitlePaint);
             }
 
-            using (var subTitlePaint = new SKPaint
+            using (var certTitlePaint = new SKPaint
+            {
+                Color = SKColor.Parse("#334155"),
+                TextSize = 13,
+                IsAntialias = true,
+                Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
+            })
+            {
+                canvas.DrawText("SERTIFIKAT JAMINAN GARANSI RESMI HARDWARE (OFFICIAL WARRANTY)", 184, 108, certTitlePaint);
+            }
+
+            using (var certSubPaint = new SKPaint
             {
                 Color = SKColor.Parse("#64748B"),
-                TextSize = 13,
+                TextSize = 11,
                 IsAntialias = true,
                 Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal)
             })
             {
-                canvas.DrawText("Dokumen Digital Sah • PT Jaya Teknologi Solusi Support System", 205, 118, subTitlePaint);
+                canvas.DrawText("Dokumen Sah Perlindungan Servis • Sistem Purna Jual & Jaminan Kualitas Resmi", 184, 126, certSubPaint);
             }
 
-            // Status Badge (Right Header)
+            // Official Verification Status Box (Right Header)
             bool isActive = status.Contains("AKTIF", StringComparison.OrdinalIgnoreCase);
-            var statusRect = new SKRoundRect(new SKRect(width - 320, 68, width - 68, 126), 8, 8);
+            var statusRect = new SKRoundRect(new SKRect(width - 290, 64, width - 66, 126), 4, 4);
             using (var statusBg = new SKPaint
             {
-                Color = isActive ? SKColor.Parse("#ECFDF5") : SKColor.Parse("#FEF2F2"),
+                Color = SKColor.Parse("#FFFFFF"),
                 Style = SKPaintStyle.Fill,
                 IsAntialias = true
             })
@@ -135,7 +146,7 @@ namespace CustomerApp.Services
 
             using (var statusBorder = new SKPaint
             {
-                Color = isActive ? SKColor.Parse("#10B981") : SKColor.Parse("#EF4444"),
+                Color = SKColor.Parse(isActive ? "#0F172A" : "#94A3B8"),
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = 1.5f,
                 IsAntialias = true
@@ -144,34 +155,45 @@ namespace CustomerApp.Services
                 canvas.DrawRoundRect(statusRect, statusBorder);
             }
 
-            using (var statusTextPaint = new SKPaint
+            using (var statusHeaderPaint = new SKPaint
             {
-                Color = isActive ? SKColor.Parse("#047857") : SKColor.Parse("#B91C1C"),
-                TextSize = 14,
+                Color = SKColor.Parse("#64748B"),
+                TextSize = 9.5f,
                 IsAntialias = true,
                 Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
             })
             {
-                string statusLabel = isActive ? "✓ GARANSI RESMI AKTIF" : "✕ GARANSI BERAKHIR";
-                canvas.DrawText(statusLabel, width - 295, 102, statusTextPaint);
+                canvas.DrawText("STATUS VERIFIKASI", width - 275, 84, statusHeaderPaint);
             }
 
-            // 3. Grid of Specifications (Left 2 columns) + QR Code Box (Right column)
-            int leftWidth = width - 330; // 870px for specs
-            int cardW = (leftWidth - 110) / 2;
-            int cardH = 140;
-            int startX = 48;
-            int startY = 165;
-            int gap = 16;
-
-            var items = new (string Label, string Value, string ColorHex)[]
+            using (var statusValuePaint = new SKPaint
             {
-                ("MODEL PERANGKAT", model, "#0F172A"),
-                ("NOMOR SERI UNIT (S/N)", serialNumber, "#2563EB"),
-                ("IDENTITAS HARDWARE / BIOS ID", hardwareId, "#334155"),
-                ("NAMA PEMILIK / PELANGGAN", buyerName, "#0F172A"),
-                ("MASA BERLAKU GARANSI", warrantyEnd, "#059669"),
-                ("TOKEN STIKER FISIK (FR-07)", qrToken, "#D97706")
+                Color = SKColor.Parse(isActive ? "#0F172A" : "#64748B"),
+                TextSize = 13,
+                IsAntialias = true,
+                Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
+            })
+            {
+                string statusLabel = isActive ? "TERVERIFIKASI AKTIF" : "MASA GARANSI BERAKHIR";
+                canvas.DrawText(statusLabel, width - 275, 108, statusValuePaint);
+            }
+
+            // 4. Grid of Specifications (Left 2 columns) + QR Code Box (Right column)
+            int leftWidth = width - 330;
+            int cardW = (leftWidth - 110) / 2;
+            int cardH = 142;
+            int startX = 48;
+            int startY = 162;
+            int gap = 14;
+
+            var items = new (string Label, string Value, bool isMono)[]
+            {
+                ("MODEL PERANGKAT / UNIT", model, false),
+                ("NOMOR SERI UNIT (SERIAL NUMBER)", serialNumber, true),
+                ("IDENTITAS HARDWARE / BIOS ID", hardwareId, true),
+                ("NAMA PEMILIK / PELANGGAN TERDAFTAR", buyerName, false),
+                ("PERIODE MASA BERLAKU GARANSI", warrantyEnd, false),
+                ("TOKEN STIKER FISIK (FR-07)", qrToken, true)
             };
 
             for (int i = 0; i < items.Length; i++)
@@ -181,7 +203,7 @@ namespace CustomerApp.Services
                 int x = startX + col * (cardW + gap);
                 int y = startY + row * (cardH + gap);
 
-                var boxRect = new SKRoundRect(new SKRect(x, y, x + cardW, y + cardH), 8, 8);
+                var boxRect = new SKRoundRect(new SKRect(x, y, x + cardW, y + cardH), 6, 6);
 
                 // Card Background
                 using (var boxBg = new SKPaint
@@ -197,7 +219,7 @@ namespace CustomerApp.Services
                 // Card Border
                 using (var boxBorder = new SKPaint
                 {
-                    Color = SKColor.Parse("#E2E8F0"),
+                    Color = SKColor.Parse("#CBD5E1"),
                     Style = SKPaintStyle.Stroke,
                     StrokeWidth = 1f,
                     IsAntialias = true
@@ -206,76 +228,88 @@ namespace CustomerApp.Services
                     canvas.DrawRoundRect(boxRect, boxBorder);
                 }
 
-                // Card Top Accent Stripe
-                using (var stripePaint = new SKPaint
+                // Label Header Strip (Clean subtle slate)
+                var labelStripRect = new SKRoundRect(new SKRect(x + 1, y + 1, x + cardW - 1, y + 30), 5, 5);
+                using (var stripPaint = new SKPaint
                 {
-                    Color = SKColor.Parse(items[i].ColorHex),
+                    Color = SKColor.Parse("#F8FAFC"),
                     Style = SKPaintStyle.Fill,
                     IsAntialias = true
                 })
                 {
-                    canvas.DrawRoundRect(new SKRoundRect(new SKRect(x, y, x + cardW, y + 4), 2, 2), stripePaint);
+                    canvas.DrawRoundRect(labelStripRect, stripPaint);
                 }
 
-                // Label
+                // Label Text
                 using (var lblPaint = new SKPaint
                 {
-                    Color = SKColor.Parse("#64748B"),
-                    TextSize = 11,
+                    Color = SKColor.Parse("#475569"),
+                    TextSize = 10,
                     IsAntialias = true,
                     Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
                 })
                 {
-                    canvas.DrawText(items[i].Label, x + 16, y + 32, lblPaint);
+                    canvas.DrawText(items[i].Label, x + 14, y + 20, lblPaint);
                 }
 
-                // Value
+                // Divider under label
+                using (var divPaint = new SKPaint
+                {
+                    Color = SKColor.Parse("#E2E8F0"),
+                    StrokeWidth = 1f,
+                    IsAntialias = true
+                })
+                {
+                    canvas.DrawLine(x, y + 30, x + cardW, y + 30, divPaint);
+                }
+
+                // Value Text (Deep Navy / Monochrome)
                 using (var valPaint = new SKPaint
                 {
-                    Color = SKColor.Parse(items[i].ColorHex),
-                    TextSize = i == 2 ? 15 : 19,
+                    Color = SKColor.Parse("#0F172A"),
+                    TextSize = i == 2 ? 14 : 17,
                     IsAntialias = true,
-                    Typeface = SKTypeface.FromFamilyName(i == 1 || i == 2 || i == 5 ? "Consolas" : "Arial", SKFontStyle.Bold)
+                    Typeface = SKTypeface.FromFamilyName(items[i].isMono ? "Consolas" : "Arial", SKFontStyle.Bold)
                 })
                 {
                     string displayVal = items[i].Value;
-                    if (displayVal.Length > 34)
+                    if (displayVal.Length > 36)
                     {
-                        displayVal = displayVal.Substring(0, 31) + "...";
+                        displayVal = displayVal.Substring(0, 33) + "...";
                     }
-                    canvas.DrawText(displayVal, x + 16, y + 74, valPaint);
+                    canvas.DrawText(displayVal, x + 14, y + 78, valPaint);
                 }
 
                 // Subnote
                 using (var subPaint = new SKPaint
                 {
-                    Color = SKColor.Parse("#94A3B8"),
-                    TextSize = 11,
+                    Color = SKColor.Parse("#64748B"),
+                    TextSize = 10.5f,
                     IsAntialias = true,
                     Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal)
                 })
                 {
                     string subNote = i switch
                     {
-                        0 => "Spesifikasi resmi terverifikasi pabrikan",
-                        1 => "Nomor unik unit laptop pelanggan",
-                        2 => "Kunci verifikasi BIOS & Motherboard",
-                        3 => "Hak kepemilikan garansi resmi",
-                        4 => "Perlindungan servis remote & on-site",
-                        5 => "Token validasi fisik QR Scanner",
+                        0 => "Spesifikasi resmi unit terverifikasi distributor",
+                        1 => "Nomor unik unit laptop / komputer pelanggan",
+                        2 => "Kunci validasi firmware BIOS & Motherboard",
+                        3 => "Hak garansi resmi atas nama pemilik terdaftar",
+                        4 => "Cakupan servis purna jual, remote & workshop",
+                        5 => "Kode token stiker QR fisik casing unit",
                         _ => ""
                     };
-                    canvas.DrawText(subNote, x + 16, y + 112, subPaint);
+                    canvas.DrawText(subNote, x + 14, y + 116, subPaint);
                 }
             }
 
-            // 4. Genuine Scannable QR Code Box (Right Side)
+            // 5. Scannable QR Code & Validation Column (Right Side)
             int qrBoxX = width - 290;
             int qrBoxY = startY;
             int qrBoxW = 242;
-            int qrBoxH = 452;
+            int qrBoxH = 454;
 
-            var qrCardRect = new SKRoundRect(new SKRect(qrBoxX, qrBoxY, qrBoxX + qrBoxW, qrBoxY + qrBoxH), 10, 10);
+            var qrCardRect = new SKRoundRect(new SKRect(qrBoxX, qrBoxY, qrBoxX + qrBoxW, qrBoxY + qrBoxH), 6, 6);
             using (var qrBg = new SKPaint
             {
                 Color = SKColor.Parse("#FFFFFF"),
@@ -290,34 +324,45 @@ namespace CustomerApp.Services
             {
                 Color = SKColor.Parse("#CBD5E1"),
                 Style = SKPaintStyle.Stroke,
-                StrokeWidth = 1.5f,
+                StrokeWidth = 1f,
                 IsAntialias = true
             })
             {
                 canvas.DrawRoundRect(qrCardRect, qrBorder);
             }
 
-            // QR Header Text
+            // QR Header Bar
+            var qrHeaderRect = new SKRoundRect(new SKRect(qrBoxX + 1, qrBoxY + 1, qrBoxX + qrBoxW - 1, qrBoxY + 32), 5, 5);
+            using (var qrHeaderBg = new SKPaint
+            {
+                Color = SKColor.Parse("#F8FAFC"),
+                Style = SKPaintStyle.Fill,
+                IsAntialias = true
+            })
+            {
+                canvas.DrawRoundRect(qrHeaderRect, qrHeaderBg);
+            }
+
             using (var qrTitlePaint = new SKPaint
             {
                 Color = SKColor.Parse("#0F172A"),
-                TextSize = 12,
+                TextSize = 10.5f,
                 IsAntialias = true,
                 Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
             })
             {
-                canvas.DrawText("PINDAI UNTUK VERIFIKASI", qrBoxX + 24, qrBoxY + 36, qrTitlePaint);
+                canvas.DrawText("VALIDASI KEABSAHAN QR", qrBoxX + 34, qrBoxY + 21, qrTitlePaint);
             }
 
-            using (var qrSubPaint = new SKPaint
+            // Divider under QR title
+            using (var divPaint = new SKPaint
             {
-                Color = SKColor.Parse("#64748B"),
-                TextSize = 10,
-                IsAntialias = true,
-                Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal)
+                Color = SKColor.Parse("#E2E8F0"),
+                StrokeWidth = 1f,
+                IsAntialias = true
             })
             {
-                canvas.DrawText("Validasi Keaslian Online PT JTS", qrBoxX + 28, qrBoxY + 54, qrSubPaint);
+                canvas.DrawLine(qrBoxX, qrBoxY + 32, qrBoxX + qrBoxW, qrBoxY + 32, divPaint);
             }
 
             // Generate Real QR Code using QRCoder
@@ -334,69 +379,91 @@ namespace CustomerApp.Services
                 using var qrBmp = SKBitmap.Decode(qrBytes);
                 if (qrBmp != null)
                 {
-                    int qrDrawSize = 180;
+                    int qrDrawSize = 175;
                     int qrX = qrBoxX + (qrBoxW - qrDrawSize) / 2;
-                    int qrY = qrBoxY + 70;
+                    int qrY = qrBoxY + 48;
                     var destRect = new SKRect(qrX, qrY, qrX + qrDrawSize, qrY + qrDrawSize);
                     canvas.DrawBitmap(qrBmp, destRect);
                 }
             }
             catch
             {
-                // Fallback box if QR generation fails
-                using var fallbackPaint = new SKPaint { Color = SKColor.Parse("#2563EB"), Style = SKPaintStyle.Stroke, StrokeWidth = 2 };
-                canvas.DrawRect(new SKRect(qrBoxX + 30, qrBoxY + 70, qrBoxX + 210, qrBoxY + 250), fallbackPaint);
+                using var fallbackPaint = new SKPaint { Color = SKColor.Parse("#0F172A"), Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
+                canvas.DrawRect(new SKRect(qrBoxX + 30, qrBoxY + 48, qrBoxX + 212, qrBoxY + 230), fallbackPaint);
             }
 
             // Token Text under QR
             using (var tokenLabelPaint = new SKPaint
             {
                 Color = SKColor.Parse("#64748B"),
-                TextSize = 10,
+                TextSize = 9.5f,
                 IsAntialias = true,
                 Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
             })
             {
-                canvas.DrawText("KODE TOKEN KEABSAHAN:", qrBoxX + 44, qrBoxY + 285, tokenLabelPaint);
+                canvas.DrawText("KODE TOKEN KEABSAHAN:", qrBoxX + 44, qrBoxY + 252, tokenLabelPaint);
             }
 
             using (var tokenValPaint = new SKPaint
             {
-                Color = SKColor.Parse("#2563EB"),
-                TextSize = 13,
+                Color = SKColor.Parse("#0F172A"),
+                TextSize = 12,
                 IsAntialias = true,
                 Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Bold)
             })
             {
-                canvas.DrawText(qrToken, qrBoxX + 50, qrBoxY + 310, tokenValPaint);
+                canvas.DrawText(qrToken, qrBoxX + 42, qrBoxY + 276, tokenValPaint);
             }
 
             // Security seal note under QR
             using (var secureBoxBg = new SKPaint
             {
-                Color = SKColor.Parse("#F1F5F9"),
+                Color = SKColor.Parse("#F8FAFC"),
                 Style = SKPaintStyle.Fill,
                 IsAntialias = true
             })
             {
-                canvas.DrawRoundRect(new SKRoundRect(new SKRect(qrBoxX + 16, qrBoxY + 335, qrBoxX + qrBoxW - 16, qrBoxY + qrBoxH - 16), 6, 6), secureBoxBg);
+                canvas.DrawRoundRect(new SKRoundRect(new SKRect(qrBoxX + 16, qrBoxY + 304, qrBoxX + qrBoxW - 16, qrBoxY + qrBoxH - 16), 4, 4), secureBoxBg);
+            }
+
+            using (var secureBoxBorder = new SKPaint
+            {
+                Color = SKColor.Parse("#E2E8F0"),
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 1f,
+                IsAntialias = true
+            })
+            {
+                canvas.DrawRoundRect(new SKRoundRect(new SKRect(qrBoxX + 16, qrBoxY + 304, qrBoxX + qrBoxW - 16, qrBoxY + qrBoxH - 16), 4, 4), secureBoxBorder);
+            }
+
+            using (var secureTitlePaint = new SKPaint
+            {
+                Color = SKColor.Parse("#0F172A"),
+                TextSize = 9.5f,
+                IsAntialias = true,
+                Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
+            })
+            {
+                canvas.DrawText("AUTENTIKASI ELEKTRONIK", qrBoxX + 32, qrBoxY + 328, secureTitlePaint);
             }
 
             using (var secureNotePaint = new SKPaint
             {
-                Color = SKColor.Parse("#334155"),
-                TextSize = 10,
+                Color = SKColor.Parse("#475569"),
+                TextSize = 9.5f,
                 IsAntialias = true,
                 Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal)
             })
             {
-                canvas.DrawText("✓ Terhubung ke database", qrBoxX + 32, qrBoxY + 365, secureNotePaint);
-                canvas.DrawText("✓ Terenkripsi SHA-256", qrBoxX + 32, qrBoxY + 388, secureNotePaint);
-                canvas.DrawText("✓ Garansi Resmi PT JTS", qrBoxX + 32, qrBoxY + 411, secureNotePaint);
+                canvas.DrawText("• Terdaftar di Database Cloud PT JTS", qrBoxX + 32, qrBoxY + 354, secureNotePaint);
+                canvas.DrawText("• Integritas Dokumen SHA-256", qrBoxX + 32, qrBoxY + 378, secureNotePaint);
+                canvas.DrawText("• Jaminan Resmi Suku Cadang OEM", qrBoxX + 32, qrBoxY + 402, secureNotePaint);
+                canvas.DrawText("• Sah untuk Klaim Seluruh Layanan", qrBoxX + 32, qrBoxY + 426, secureNotePaint);
             }
 
-            // 5. Footer Section (Clean light border & official seal)
-            int footerY = height - 75;
+            // 6. Footer Section (Corporate formal line & metadata)
+            int footerY = height - 68;
             using (var linePaint = new SKPaint
             {
                 Color = SKColor.Parse("#CBD5E1"),
@@ -410,26 +477,26 @@ namespace CustomerApp.Services
             using (var footerLeft = new SKPaint
             {
                 Color = SKColor.Parse("#64748B"),
-                TextSize = 12,
+                TextSize = 11,
                 IsAntialias = true,
                 Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal)
             })
             {
-                canvas.DrawText("PT Jaya Teknologi Solusi • Layanan Garansi & Servis Resmi • Hotline: 0812-9900-1122 • support@jts.co.id", 48, footerY + 36, footerLeft);
+                canvas.DrawText("PT Jaya Teknologi Solusi • Sentra Layanan Purna Jual & Garansi Resmi Hardware • Hotline: (021) 5088-7799 • aftersales@jts.co.id", 48, footerY + 32, footerLeft);
             }
 
             using (var sealPaint = new SKPaint
             {
-                Color = SKColor.Parse("#2563EB"),
-                TextSize = 13,
+                Color = SKColor.Parse("#0F172A"),
+                TextSize = 11.5f,
                 IsAntialias = true,
                 Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
             })
             {
-                canvas.DrawText("★ JTS VERIFIED OFFICIAL WARRANTY ★", width - 365, footerY + 36, sealPaint);
+                canvas.DrawText("OFFICIAL HARDWARE WARRANTY CERTIFICATE", width - 340, footerY + 32, sealPaint);
             }
 
-            // 6. Save image to Downloads folder
+            // 7. Save image to Downloads folder
             string downloadsDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
             if (!Directory.Exists(downloadsDir))
             {

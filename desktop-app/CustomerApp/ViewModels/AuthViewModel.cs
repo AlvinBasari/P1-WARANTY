@@ -165,6 +165,8 @@ namespace CustomerApp.ViewModels
         [RelayCommand]
         private async Task SubmitAsync()
         {
+            if (IsLoading) return;
+
             IsLoading = true;
             ErrorMessage = null;
 

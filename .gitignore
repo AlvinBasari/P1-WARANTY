@@ -45,6 +45,8 @@ frontend-public/dist/
 # ============================================================
 desktop-app/**/bin/
 desktop-app/**/obj/
+desktop-app/**/publish/
+desktop-app/**/payload.zip
 desktop-app/**/*.user
 desktop-app/**/*.suo
 desktop-app/**/.vs/

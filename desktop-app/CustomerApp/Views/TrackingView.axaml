@@ -38,6 +38,15 @@
                         </Border>
                         <TextBlock Text="Tidak Ada Unit dalam Antrean Perbaikan" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}" HorizontalAlignment="Center" />
                         <TextBlock Text="Unit komputer Anda saat ini beroperasi normal dan tidak sedang dalam penanganan workshop fisik." FontSize="13" Foreground="{DynamicResource VantageTextMutedBrush}" HorizontalAlignment="Center" TextWrapping="Wrap" />
+                        <Button Command="{Binding NavigateToClaimCommand}"
+                                Background="{DynamicResource VantageAccentBrush}" Foreground="White"
+                                Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="SemiBold"
+                                HorizontalAlignment="Center" Margin="0,6,0,0" Cursor="Hand">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconService}" Width="14" Height="14" Foreground="White" VerticalAlignment="Center" />
+                                <TextBlock Text="Ajukan Klaim Servis Baru" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Border>
 

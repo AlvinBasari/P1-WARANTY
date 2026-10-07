@@ -254,10 +254,16 @@ namespace DesktopApp.Tests
             Assert.False(vm.IsAuthPage);
             Assert.Equal("Budi Santoso", vm.TechnicianName);
 
-            // Logout -> Back to Auth Page
+            // Logout -> Triggers Confirmation Dialog -> Confirm -> Back to Auth Page
             vm.Logout();
+            Assert.True(vm.IsConfirmDialogOpen);
+            Assert.NotNull(vm.ConfirmDialogViewModel);
+            Assert.Equal("danger", vm.ConfirmDialogViewModel.DialogType);
+            vm.ConfirmDialogViewModel.Confirm();
+
             Assert.False(vm.IsAuthenticated);
             Assert.True(vm.IsAuthPage);
+            Assert.False(vm.IsConfirmDialogOpen);
         }
     }
 }

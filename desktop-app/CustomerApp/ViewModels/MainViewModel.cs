@@ -62,6 +62,12 @@ namespace CustomerApp.ViewModels
         [ObservableProperty]
         private string _userInitial = "U";
 
+        [ObservableProperty]
+        private ConfirmDialogViewModel? _confirmDialogViewModel;
+
+        [ObservableProperty]
+        private bool _isConfirmDialogOpen;
+
         public AuthViewModel AuthVm { get; }
         public WarrantyViewModel WarrantyVm { get; }
         public DiagnosticViewModel DiagnosticVm { get; }
@@ -81,9 +87,9 @@ namespace CustomerApp.ViewModels
             WarrantyVm = new WarrantyViewModel(_apiClient, null, NavigateToTab, OnDeviceActivated);
             DiagnosticVm = new DiagnosticViewModel(_apiClient, _deviceService, NavigateToTab);
             ComponentDetailVm = new ComponentDetailViewModel(NavigateToTab);
-            ClaimVm = new ClaimViewModel(_apiClient, _rustdeskService, () => CurrentDevice, OnClaimSubmitted);
-            TrackingVm = new TrackingViewModel(_apiClient);
-            LocationVm = new LocationViewModel(_apiClient, () => CurrentDevice, OnLocationUpdated, () => CurrentUser, OnUserUpdated);
+            ClaimVm = new ClaimViewModel(_apiClient, _rustdeskService, () => CurrentDevice, OnClaimSubmitted, ShowConfirmDialog);
+            TrackingVm = new TrackingViewModel(_apiClient, NavigateToTab);
+            LocationVm = new LocationViewModel(_apiClient, () => CurrentDevice, OnLocationUpdated, () => CurrentUser, OnUserUpdated, ShowConfirmDialog);
 
             // Load saved theme preference
             var savedTheme = _themeSettingsService.GetSavedTheme();
@@ -92,6 +98,34 @@ namespace CustomerApp.ViewModels
 
             // Start on Auth if not logged in
             CurrentView = AuthVm;
+        }
+
+        public void ShowConfirmDialog(ConfirmDialogViewModel dialog)
+        {
+            var origConfirm = dialog.ConfirmAction;
+            var origCancel = dialog.CancelAction;
+
+            dialog.SetCallbacks(
+                onConfirm: () =>
+                {
+                    CloseConfirmDialog();
+                    origConfirm?.Invoke();
+                },
+                onCancel: () =>
+                {
+                    CloseConfirmDialog();
+                    origCancel?.Invoke();
+                }
+            );
+
+            ConfirmDialogViewModel = dialog;
+            IsConfirmDialogOpen = true;
+        }
+
+        public void CloseConfirmDialog()
+        {
+            IsConfirmDialogOpen = false;
+            ConfirmDialogViewModel = null;
         }
 
         [RelayCommand]
@@ -290,6 +324,35 @@ namespace CustomerApp.ViewModels
             }
 
             ActiveTab = tabName;
+
+            if (tabName == "Tracking")
+            {
+                var activeReqId = ClaimVm.SubmittedRequest?.Id;
+                if (activeReqId.HasValue && activeReqId.Value > 0)
+                {
+                    _ = TrackingVm.LoadTrackingForRequestAsync(activeReqId.Value);
+                }
+                else if (CurrentDevice?.RepairRequests != null)
+                {
+                    RepairRequestDto? latestWorkshop = null;
+                    foreach (var req in CurrentDevice.RepairRequests)
+                    {
+                        if (req.NeedsOfficeRepair || req.Type == "on_site" || req.Tracking != null)
+                        {
+                            if (latestWorkshop == null || req.Id > latestWorkshop.Id)
+                            {
+                                latestWorkshop = req;
+                            }
+                        }
+                    }
+
+                    if (latestWorkshop != null)
+                    {
+                        _ = TrackingVm.LoadTrackingForRequestAsync(latestWorkshop.Id);
+                    }
+                }
+            }
+
             CurrentView = tabName switch
             {
                 "Auth" => AuthVm,
@@ -305,6 +368,21 @@ namespace CustomerApp.ViewModels
 
         [RelayCommand]
         public void Logout()
+        {
+            ShowConfirmDialog(new ConfirmDialogViewModel(
+                title: "Konfirmasi Keluar Akun",
+                message: "Apakah Anda yakin ingin keluar dari JTS Vantage Support di perangkat ini? Anda dapat masuk kembali kapan saja untuk mengakses riwayat servis dan jaminan unit.",
+                onConfirm: ExecuteLogout,
+                onCancel: () => { },
+                detailNote: $"Pengguna Aktif: {CurrentUser?.Name ?? "Pengguna"} ({CurrentUser?.Email ?? "-"})",
+                confirmText: "Ya, Keluar Akun",
+                cancelText: "Batal",
+                dialogType: "danger",
+                badgeText: "KELUAR AKUN"
+            ));
+        }
+
+        public void ExecuteLogout()
         {
             _apiClient.ClearToken();
             CurrentUser = null;

@@ -68,6 +68,8 @@ namespace TechnicianApp.ViewModels
         [RelayCommand]
         public async Task LoginAsync()
         {
+            if (IsLoading) return;
+
             if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
                 ErrorMessage = "Harap isi email dan kata sandi teknisi.";

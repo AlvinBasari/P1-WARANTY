@@ -122,16 +122,16 @@ namespace CustomerApp.ViewModels
             if (double.TryParse(inv.WarrantyDiscountAmount, out var d)) discount = d;
             if (double.TryParse(inv.TotalPayableAmount, out var p)) payable = p;
 
-            SubtotalFormatted = $"Rp {subtotal:N0}";
-            WarrantyDiscountFormatted = $"- Rp {discount:N0}";
-            TotalPayableFormatted = $"Rp {payable:N0}";
+            SubtotalFormatted = string.Format(System.Globalization.CultureInfo.InvariantCulture, "Rp {0:N0}", subtotal);
+            WarrantyDiscountFormatted = string.Format(System.Globalization.CultureInfo.InvariantCulture, "- Rp {0:N0}", discount);
+            TotalPayableFormatted = string.Format(System.Globalization.CultureInfo.InvariantCulture, "Rp {0:N0}", payable);
 
             IsFullyCoveredByWarranty = (payable <= 0);
             PaymentStatusBadge = IsFullyCoveredByWarranty
                 ? "LUNAS (KLAIM GARANSI PENUH)"
                 : $"MENUNGGU PEMBAYARAN ({TotalPayableFormatted})";
 
-            Notes = inv.Notes ?? "Faktur resmi jaminan garansi dan perbaikan perangkat PT Jaya Teknologi Solusindo.";
+            Notes = inv.Notes ?? "Faktur resmi jaminan garansi dan perbaikan perangkat PT Jaya Teknologi Solusi.";
             Terms = inv.TermsAndConditions ?? "1. Seluruh suku cadang resmi dilindungi garansi 1 tahun.\n2. Biaya yang dijamin garansi telah dipotong 100% otomatis.\n3. Simpan dokumen ini sebagai bukti klaim sah.";
 
             DisplayItems.Clear();
@@ -153,10 +153,10 @@ namespace CustomerApp.ViewModels
                         ItemCode = item.ItemCode ?? "",
                         CategoryName = FormatCategory(item.Category),
                         Quantity = item.Quantity,
-                        UnitPriceFormatted = $"Rp {unitPrice:N0}",
-                        SubtotalFormatted = $"Rp {itemSubtotal:N0}",
+                        UnitPriceFormatted = string.Format(System.Globalization.CultureInfo.InvariantCulture, "Rp {0:N0}", unitPrice),
+                        SubtotalFormatted = string.Format(System.Globalization.CultureInfo.InvariantCulture, "Rp {0:N0}", itemSubtotal),
                         IsCoveredByWarranty = item.IsCoveredByWarranty,
-                        CustomerPayableFormatted = item.IsCoveredByWarranty ? "Rp 0 (Covered)" : $"Rp {itemPayable:N0}",
+                        CustomerPayableFormatted = item.IsCoveredByWarranty ? "Rp 0 (Covered)" : string.Format(System.Globalization.CultureInfo.InvariantCulture, "Rp {0:N0}", itemPayable),
                         Notes = item.Notes ?? ""
                     });
                 }
@@ -178,7 +178,7 @@ namespace CustomerApp.ViewModels
         [RelayCommand]
         public async Task DownloadAndOpenInvoiceAsync()
         {
-            if (Invoice == null) return;
+            if (IsLoading || Invoice == null) return;
 
             IsLoading = true;
             StatusMessage = "Mengunduh berkas invoice resmi...";
@@ -203,10 +203,19 @@ namespace CustomerApp.ViewModels
                     saveDir = Path.Combine(downloadsFolder, "Documents");
                 }
 
-                string safeNum = string.IsNullOrWhiteSpace(Invoice.InvoiceNumber) ? $"INV-{Invoice.Id}" : Invoice.InvoiceNumber.Replace("/", "-");
+                string rawNum = string.IsNullOrWhiteSpace(Invoice.InvoiceNumber) ? $"INV-{Invoice.Id}" : Invoice.InvoiceNumber;
+                string safeNum = string.Join("_", rawNum.Split(Path.GetInvalidFileNameChars()));
                 string filePath = Path.Combine(saveDir, $"Faktur-Garansi-{safeNum}.html");
 
-                await File.WriteAllTextAsync(filePath, htmlContent);
+                try
+                {
+                    await File.WriteAllTextAsync(filePath, htmlContent);
+                }
+                catch (IOException)
+                {
+                    filePath = Path.Combine(saveDir, $"Faktur-Garansi-{safeNum}_{DateTime.Now:yyyyMMddHHmmssfff}.html");
+                    await File.WriteAllTextAsync(filePath, htmlContent);
+                }
 
                 StatusMessage = $"✓ Invoice tersimpan di: {Path.GetFileName(filePath)}";
 
@@ -268,7 +277,7 @@ th {{ background: #f8fafc; font-size: 12px; }}
 </head>
 <body>
 <div class='header'>
-  <div class='title'>PT JAYA TEKNOLOGI SOLUSINDO - FAKTUR KLAIM GARANSI</div>
+  <div class='title'>PT JAYA TEKNOLOGI SOLUSI - FAKTUR KLAIM GARANSI</div>
   <div>No. Faktur: <strong>{inv.InvoiceNumber}</strong> • Tanggal: {IssueDateText}</div>
   <div>Perangkat: {DeviceModel} (S/N: {SerialNumber})</div>
 </div>
@@ -278,7 +287,7 @@ th {{ background: #f8fafc; font-size: 12px; }}
     <tr><th>Item</th><th>Qty</th><th>Harga</th><th>Garansi</th><th>Ditagih</th></tr>
   </thead>
   <tbody>
-    <tr><td>Perbaikan Hardware & Diagnostik Lengkap</td><td>1</td><td>{SubtotalFormatted}</td><td>🛡️ Jaminan Garansi 100%</td><td>{TotalPayableFormatted}</td></tr>
+    <tr><td>Perbaikan Hardware & Diagnostik Lengkap</td><td>1</td><td>{SubtotalFormatted}</td><td>Jaminan Garansi 100%</td><td>{TotalPayableFormatted}</td></tr>
   </tbody>
 </table>
 <div style='margin-top: 20px; text-align: right;'>

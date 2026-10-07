@@ -1,0 +1,180 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TechnicianApp.ViewModels"
+             x:Class="TechnicianApp.Views.ConfirmDialog"
+             x:DataType="vm:ConfirmDialogViewModel">
+
+    <!-- Modal Backdrop Overlay -->
+    <Grid Background="#B0000000">
+        <Border VerticalAlignment="Center" HorizontalAlignment="Center"
+                Background="{DynamicResource VantageCardBrush}"
+                BorderBrush="{DynamicResource VantageBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="24"
+                Width="480"
+                MaxWidth="520"
+                BoxShadow="0 16 48 0 #60000000">
+            <StackPanel Spacing="16">
+
+                <!-- Header: Icon + Title + Badge + Close -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <!-- Danger Icon -->
+                        <Border IsVisible="{Binding IsDanger}"
+                                Width="36" Height="36" CornerRadius="10" Background="{DynamicResource VantageFaultSubtleBrush}">
+                            <PathIcon Data="{DynamicResource IconAlert}" Width="16" Height="16" Foreground="{DynamicResource VantageFaultBrush}"/>
+                        </Border>
+
+                        <!-- Warning Icon -->
+                        <Border IsVisible="{Binding IsWarning}"
+                                Width="36" Height="36" CornerRadius="10" Background="{DynamicResource VantageAmberSubtleBrush}">
+                            <PathIcon Data="{DynamicResource IconAlert}" Width="16" Height="16" Foreground="{DynamicResource VantageAmberBrush}"/>
+                        </Border>
+
+                        <!-- Success Icon -->
+                        <Border IsVisible="{Binding IsSuccess}"
+                                Width="36" Height="36" CornerRadius="10" Background="{DynamicResource VantageGreenSubtleBrush}">
+                            <PathIcon Data="{DynamicResource IconCheck}" Width="16" Height="16" Foreground="{DynamicResource VantageGreenBrush}"/>
+                        </Border>
+
+                        <!-- Info Icon -->
+                        <Border IsVisible="{Binding IsInfo}"
+                                Width="36" Height="36" CornerRadius="10" Background="{DynamicResource VantageAccentSubtleBrush}">
+                            <PathIcon Data="{DynamicResource IconInfo}" Width="16" Height="16" Foreground="{DynamicResource VantageAccentLightBrush}"/>
+                        </Border>
+
+                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextBrush}"/>
+                            <!-- Optional Badge -->
+                            <Border IsVisible="{Binding BadgeText, Converter={StaticResource StringNotNullOrEmptyToBoolConverter}}"
+                                    Background="{DynamicResource VantageCardSubtleBrush}"
+                                    BorderBrush="{DynamicResource VantageBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="6,2"
+                                    HorizontalAlignment="Left">
+                                <TextBlock Text="{Binding BadgeText}" FontSize="9" FontWeight="Bold" FontFamily="Consolas,Monospace" Foreground="{DynamicResource VantageAccentLightBrush}"/>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Close Button -->
+                    <Button Grid.Column="2" Command="{Binding CancelCommand}"
+                            HotKey="Escape"
+                            Padding="8,4" Background="Transparent" BorderBrush="Transparent" Cursor="Hand"
+                            VerticalAlignment="Top">
+                        <TextBlock Text="✕" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource VantageTextMutedBrush}"/>
+                    </Button>
+                </Grid>
+
+                <Separator Background="{DynamicResource VantageBorderBrush}" Margin="0,0,0,0"/>
+
+                <!-- Message Body -->
+                <TextBlock Text="{Binding Message}"
+                           FontSize="12"
+                           Foreground="{DynamicResource VantageTextMutedBrush}"
+                           TextWrapping="Wrap"
+                           LineHeight="19"/>
+
+                <!-- Structured Detail Box (Optional) -->
+                <Border IsVisible="{Binding HasDetailNote}"
+                        Background="{DynamicResource VantageCardSubtleBrush}"
+                        BorderBrush="{DynamicResource VantageBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="12,10">
+                    <TextBlock Text="{Binding DetailNote}"
+                               FontSize="11"
+                               Foreground="{DynamicResource VantageTextBrush}"
+                               TextWrapping="Wrap"
+                               LineHeight="17"/>
+                </Border>
+
+                <!-- Action Buttons: Cancel & Confirm -->
+                <Grid ColumnDefinitions="*,*">
+                    <Button Grid.Column="0"
+                            Command="{Binding CancelCommand}"
+                            HotKey="Escape"
+                            Background="{DynamicResource VantageCardSubtleBrush}"
+                            BorderBrush="{DynamicResource VantageBorderBrush}"
+                            BorderThickness="1"
+                            Foreground="{DynamicResource VantageTextBrush}"
+                            FontWeight="SemiBold"
+                            FontSize="12"
+                            Padding="12,10"
+                            Margin="0,0,6,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center">
+                        <TextBlock Text="{Binding CancelText}" HorizontalAlignment="Center"/>
+                    </Button>
+
+                    <!-- Danger Confirm Button -->
+                    <Button Grid.Column="1"
+                            IsVisible="{Binding IsDanger}"
+                            Command="{Binding ConfirmCommand}"
+                            HotKey="Enter"
+                            Background="{DynamicResource VantageFaultBrush}"
+                            Foreground="White"
+                            FontWeight="Bold"
+                            FontSize="12"
+                            Padding="12,10"
+                            Margin="6,0,0,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center">
+                        <TextBlock Text="{Binding ConfirmText}" HorizontalAlignment="Center"/>
+                    </Button>
+
+                    <!-- Warning Confirm Button -->
+                    <Button Grid.Column="1"
+                            IsVisible="{Binding IsWarning}"
+                            Command="{Binding ConfirmCommand}"
+                            HotKey="Enter"
+                            Background="{DynamicResource VantageAmberBrush}"
+                            Foreground="#1E1B4B"
+                            FontWeight="Bold"
+                            FontSize="12"
+                            Padding="12,10"
+                            Margin="6,0,0,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center">
+                        <TextBlock Text="{Binding ConfirmText}" HorizontalAlignment="Center"/>
+                    </Button>
+
+                    <!-- Success Confirm Button -->
+                    <Button Grid.Column="1"
+                            IsVisible="{Binding IsSuccess}"
+                            Command="{Binding ConfirmCommand}"
+                            HotKey="Enter"
+                            Background="{DynamicResource VantageGreenBrush}"
+                            Foreground="White"
+                            FontWeight="Bold"
+                            FontSize="12"
+                            Padding="12,10"
+                            Margin="6,0,0,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center">
+                        <TextBlock Text="{Binding ConfirmText}" HorizontalAlignment="Center"/>
+                    </Button>
+
+                    <!-- Info/Default Confirm Button -->
+                    <Button Grid.Column="1"
+                            IsVisible="{Binding IsInfo}"
+                            Command="{Binding ConfirmCommand}"
+                            HotKey="Enter"
+                            Background="{DynamicResource VantageAccentBrush}"
+                            Foreground="White"
+                            FontWeight="Bold"
+                            FontSize="12"
+                            Padding="12,10"
+                            Margin="6,0,0,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center">
+                        <TextBlock Text="{Binding ConfirmText}" HorizontalAlignment="Center"/>
+                    </Button>
+                </Grid>
+
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
